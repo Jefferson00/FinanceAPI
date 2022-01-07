@@ -17,4 +17,10 @@ export class User {
 
   @Field({ nullable: true })
   phone: string | null;
+
+  @Field()
+  createdAt?: Date;
+
+  @Field()
+  updatedAt?: Date;
 }
