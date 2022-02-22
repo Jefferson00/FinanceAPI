@@ -1,8 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from '@prisma/client';
 import { UserCreateDto } from './dtos/user-create.dto';
 import { UserUpdateDto } from './dtos/user-update.dto';
 import { UsersService } from './users.service';
+import { diskStorage } from 'multer';
+import * as path from 'path';
 
 @Controller('users')
 export class UsersController {
@@ -34,6 +37,29 @@ export class UsersController {
         id
       }
     })
+  }
+
+  @Patch(':id/avatar')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: path.resolve(__dirname, '..', '..', '..', 'uploads'),
+        filename: (req, file, cb) => {
+          const randomName = Array(64)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          const extension = file.originalname.split('.');
+          return cb(null, `${randomName}.${extension[extension.length - 1]}`);
+        },
+      })
+    })
+  )
+  async updateAvatar(
+    @UploadedFile() image,
+    @Param('id') id: string
+  ): Promise<User> {
+    return this.userService.updateUserAvatar(id, image);
   }
 
   @Delete(':id')
