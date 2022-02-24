@@ -6,18 +6,18 @@ export class UserUpdateDto {
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
   @MinLength(2, { message: 'O campo nome deve ter no mínimo 2 caracteres.' })
   @MaxLength(30, { message: 'O campo nome deve ter no máximo 30 caracteres.' })
-  name: string;
+  name?: string;
 
   @IsOptional()
   @IsEmail({}, { message: 'E-mail inválido.' })
-  email: string;
+  email?: string;
 
   @IsOptional()
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
-  avatar: string;
+  avatar?: string;
 
   @IsOptional()
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
   @IsPhoneNumber('BR', { message: 'Formato de telefone inválido'})
-  phone: string;
+  phone?: string;
 }

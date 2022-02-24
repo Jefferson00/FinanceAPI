@@ -17,19 +17,19 @@ export class UsersService {
     userWhereUniqueInput: Prisma.UserWhereUniqueInput,
   ): Promise<User | null> {
     try {
-      return this.prisma.user.findUnique({
+      return await this.prisma.user.findUnique({
         where: userWhereUniqueInput,
       });
     } catch (error) {
-      throw new HttpException(error?.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
   async users(): Promise<User[]> {
     try {
-      return this.prisma.user.findMany();
+      return await this.prisma.user.findMany();
     } catch (error) {
-      throw new HttpException(error?.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -50,7 +50,7 @@ export class UsersService {
         data,
       });
     } catch (error) {
-      throw new HttpException(error?.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -72,10 +72,7 @@ export class UsersService {
         where,
       });
     } catch (error) {
-      if (error.message) {
-        throw new HttpException(error?.message, HttpStatus.BAD_REQUEST);
-      }
-      throw new HttpException('Erro ao atualizar', HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -106,10 +103,7 @@ export class UsersService {
       
       return userSaved;
     } catch (error) {
-      if (error.message) {
-        throw new HttpException(error?.message, HttpStatus.BAD_REQUEST);
-      }
-      throw new HttpException('Erro ao atualizar', HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -117,14 +111,11 @@ export class UsersService {
     try {
       await this.verifyUserExist(where.id);
 
-      return this.prisma.user.delete({
+      return await this.prisma.user.delete({
         where,
       });
     } catch (error) {
-      if (error.message) {
-        throw new HttpException(error?.message, HttpStatus.BAD_REQUEST);
-      }
-      throw new HttpException('Erro ao deletar usuário', HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
