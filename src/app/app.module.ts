@@ -1,3 +1,4 @@
+import { AccountsModule } from './../models/accounts/accounts.module';
 import { UsersModule } from './../models/users/users.module';
 import {
   MiddlewareConsumer,
@@ -10,7 +11,7 @@ import { AppService } from './app.service';
 import { AuthMiddleware } from 'src/auth/auth.middleware';
 
 @Module({
-  imports: [UsersModule],
+  imports: [AccountsModule, UsersModule],
   controllers: [AppController],
   providers: [AppService],
 })

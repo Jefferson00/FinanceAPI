@@ -14,6 +14,20 @@ export class UsersController {
     private readonly userService: UsersService,
   ) {}
 
+  @Get('/phone/:phone')
+  async getUserByPhone(
+    @Param('phone') phone: string,
+  ): Promise<User> {
+    return this.userService.user({phone});
+  }
+
+  @Get('/email/:email')
+  async getUserByEmail(
+    @Param('email') email: string,
+  ): Promise<User> {
+    return this.userService.user({email});
+  }
+
   @Get()
   async getAllUsers(): Promise<User[]> {
     return this.userService.users();

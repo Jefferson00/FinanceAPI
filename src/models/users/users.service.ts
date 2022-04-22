@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { User, Prisma } from '@prisma/client';
 import { UserCreateDto } from './dtos/user-create.dto';
@@ -21,6 +21,7 @@ export class UsersService {
         where: userWhereUniqueInput,
       });
     } catch (error) {
+      Logger.log('erro ao buscar usuário: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
@@ -29,6 +30,7 @@ export class UsersService {
     try {
       return await this.prisma.user.findMany();
     } catch (error) {
+      Logger.log('erro ao listar usuários: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
@@ -50,6 +52,7 @@ export class UsersService {
         data,
       });
     } catch (error) {
+      Logger.log('erro ao criar usuário: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
@@ -72,6 +75,7 @@ export class UsersService {
         where,
       });
     } catch (error) {
+      Logger.log('erro ao atualizar usuário: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
@@ -115,6 +119,7 @@ export class UsersService {
         where,
       });
     } catch (error) {
+      Logger.log('erro ao deletar usuário: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
