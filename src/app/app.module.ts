@@ -1,5 +1,6 @@
 import { AccountsModule } from './../models/accounts/accounts.module';
 import { UsersModule } from './../models/users/users.module';
+import { IncomesModule } from './../models/incomes/incomes.module';
 import {
   MiddlewareConsumer,
   Module,
@@ -11,7 +12,7 @@ import { AppService } from './app.service';
 import { AuthMiddleware } from 'src/auth/auth.middleware';
 
 @Module({
-  imports: [AccountsModule, UsersModule],
+  imports: [AccountsModule, UsersModule, IncomesModule],
   controllers: [AppController],
   providers: [AppService],
 })

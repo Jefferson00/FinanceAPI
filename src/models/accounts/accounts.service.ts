@@ -25,7 +25,30 @@ export class AccountsService {
 
   async accounts(where?: Prisma.AccountWhereInput): Promise<Account[]> {
     try {
-      return await this.prisma.account.findMany({where});
+      return await this.prisma.account.findMany({where, include: {
+        IncomesOnAccounts: {
+          select: {
+            paymentDate: true,
+            receiptDate: true,
+            recurrence: true,
+            value: true,
+            income: {
+              select: {
+                category: true,
+                description: true,
+                id: true,
+                name: true,
+                value: true,
+                receiptDate: true,
+                receiptDefault: true,
+                iteration: true,
+                startDate: true,
+                endDate: true,
+              }
+            }
+          }
+        }
+      }});
     } catch (error) {
       Logger.log('erro ao listar contas: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

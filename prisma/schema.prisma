@@ -16,16 +16,51 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   Account   Account[]
+  Income    Income[]
 }
 
 model Account {
-  id           String   @id @default(uuid())
-  name         String
-  type         String
-  initialValue Int
-  status       String
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String              @id @default(uuid())
+  name              String
+  type              String
+  initialValue      Int
+  status            String
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  IncomesOnAccounts IncomesOnAccounts[]
+}
+
+model Income {
+  id                String              @id @default(uuid())
+  name              String
+  description       String?
+  value             Int
+  category          String
+  receiptDate       DateTime
+  iteration         String
+  receiptDefault    String?
+  startDate         DateTime
+  endDate           DateTime?
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  IncomesOnAccounts IncomesOnAccounts[]
+}
+
+model IncomesOnAccounts {
+  account     Account  @relation(fields: [accountId], references: [id])
+  accountId   String
+  income      Income   @relation(fields: [incomeId], references: [id])
+  incomeId    String
+  assignedAt  DateTime @default(now())
+  assignedBy  String
+  value       Int
+  receiptDate DateTime
+  paymentDate DateTime
+  recurrence  String?
+
+  @@id([accountId, incomeId])
 }
