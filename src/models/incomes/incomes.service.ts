@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Income, IncomesOnAccounts, Prisma } from '@prisma/client';
+import { Income, IncomeOnAccount, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/providers/database/prisma/prisma.service';
 import { IncomeOnAccountCreateDto } from './dtos/income-on-account-create.dto';
 import { IncomesCreateDto } from './dtos/incomes-create.dto';
@@ -32,17 +32,9 @@ export class IncomesService {
     }
   }
 
-  async incomesOnAccount(where?: Prisma.IncomesOnAccountsWhereInput): Promise<IncomesOnAccounts[]> {
+  async incomesOnAccount(where?: Prisma.IncomeOnAccountWhereInput): Promise<IncomeOnAccount[]> {
     try {
-      return await this.prisma.incomesOnAccounts.findMany({where, include: {
-        income: {
-          include: {
-            IncomesOnAccounts :{
-              where
-            }
-          }
-        }
-      } });
+      return await this.prisma.incomeOnAccount.findMany({where });
     } catch (error) {
       Logger.log('erro ao listar entradas: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -121,27 +113,43 @@ export class IncomesService {
     }
   }
 
-  async createIncomeOnAccount(data: IncomeOnAccountCreateDto): Promise<IncomesOnAccounts> {
+  async createIncomeOnAccount(data: IncomeOnAccountCreateDto): Promise<IncomeOnAccount> {
     try {
-      return this.prisma.incomesOnAccounts.create({data: {
-        assignedBy: data.assignedBy,
-        paymentDate: data.paymentDate,
-        receiptDate: data.receiptDate,
-        recurrence: data.recurrence,
-        value: data.value,
-        account: {
-          connect: {
-            id: data.accountId,
-          }
-        },
-        income: {
-          connect: {
-            id: data.incomeId,
-          }
-        }
-      }});
+      return this.prisma.incomeOnAccount.create({data});
     } catch (error) {
-      Logger.log('erro ao criar entrada: ', error);
+      Logger.log('erro ao vincular entrada na conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+
+  async deleteIncomeOnAccount(where: Prisma.IncomeOnAccountWhereUniqueInput, userId: string): Promise<boolean> {
+    try {
+      const verifyIncomeOnAccountExists = await this.prisma.incomeOnAccount.findUnique({
+        where
+      })
+
+      if (!verifyIncomeOnAccountExists) {
+        throw new HttpException(
+          'ERRO: entrada não encontrada',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      if (verifyIncomeOnAccountExists.userId !== userId) {
+        throw new HttpException(
+          'ERRO: usuário não autorizado a realizar essa ação',
+          HttpStatus.UNAUTHORIZED
+        );
+      }
+
+      await this.prisma.incomeOnAccount.delete({
+        where,
+      });
+
+      return true;
+    } catch (error) {
+      Logger.log('erro ao deletar entrada: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }

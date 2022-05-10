@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
-export class IncomeOnAccountCreateDto {
+export class ExpanseOnAccountCreateDto {
   @IsNotEmpty({message: 'O campo id do usuário é obrigatório.'})
   @IsUUID('all', { message: 'O campo id do usuário  deve ser do tipo uuid.' })
   userId!: string;
@@ -10,9 +10,9 @@ export class IncomeOnAccountCreateDto {
   @IsUUID('all', { message: 'O campo id da conta  deve ser do tipo uuid.' })
   accountId!: string;
 
-  @IsNotEmpty({message: 'O campo id da entrada é obrigatório.'})
-  @IsUUID('all', { message: 'O campo id da entrada  deve ser do tipo uuid.' })
-  incomeId!: string;
+  @IsNotEmpty({message: 'O campo id da despesa é obrigatório.'})
+  @IsUUID('all', { message: 'O campo id da despesa  deve ser do tipo uuid.' })
+  expanseId!: string;
 
   @IsNotEmpty({message: 'O valor é obrigatório.'})
   @IsInt({ message: 'O campo valor deve ser do tipo numérico.' })

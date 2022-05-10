@@ -10,9 +10,10 @@ import {
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthMiddleware } from 'src/auth/auth.middleware';
+import { ExpansesModule } from 'src/models/expanses/expanses.module';
 
 @Module({
-  imports: [AccountsModule, UsersModule, IncomesModule],
+  imports: [AccountsModule, UsersModule, IncomesModule, ExpansesModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -1,12 +1,12 @@
 /* eslint-disable prettier/prettier */
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
-export class IncomesCreateDto {
-  @IsNotEmpty({message: 'O campo nome é obrigatório.'})
+export class ExpanseUpdateDto {
+  @IsOptional()
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
   @MinLength(2, { message: 'O campo nome deve ter no mínimo 2 caracteres.' })
   @MaxLength(30, { message: 'O campo nome deve ter no máximo 30 caracteres.' })
-  name!: string;
+  name?: string;
 
   @IsNotEmpty({message: 'O campo id do usuário é obrigatório.'})
   @IsUUID('all', { message: 'O campo id do usuário deve ser do tipo uuid.' })
@@ -16,32 +16,32 @@ export class IncomesCreateDto {
   @IsString({ message: 'O campo descrição deve ser do tipo texto.' })
   description?: string;
 
-  @IsNotEmpty({message: 'O valor é obrigatório.'})
+  @IsOptional()
   @IsInt({ message: 'O campo valor deve ser do tipo numérico.' })
-  value!: number;
+  value?: number;
 
-  @IsNotEmpty({message: 'O campo categoria é obrigatório.'})
+  @IsOptional()
   @IsString({ message: 'O campo categoria deve ser do tipo texto.' })
-  category!: string;
+  category?: string;
 
-  @IsNotEmpty({message: 'O campo repetição é obrigatório.'})
+  @IsOptional()
   @IsString({ message: 'O campo repetição deve ser do tipo texto.' })
-  iteration!: string;
+  iteration?: string;
 
-  @IsNotEmpty({message: 'O campo data de recebimento é obrigatório.'})
+  @IsOptional()
   @IsString({ message: 'O campo data de recebimento deve ser do tipo texto.' })
-  receiptDate!: string;
+  receiptDate?: string;
 
-  @IsNotEmpty({message: 'O campo data de inicio é obrigatório.'})
+  @IsOptional()
+  @IsString({ message: 'O campo recebimento padrão deve ser do tipo texto.' })
+  receiptDefault?: string;
+
+
+  @IsOptional()
   @IsString({ message: 'O campo data de inicio deve ser do tipo texto.' })
-  startDate!: string;
+  startDate?: string;
 
   @IsOptional()
   @IsString({ message: 'O campo data final deve ser do tipo texto.' })
   endDate?: string;
-
-  @IsNotEmpty({message: 'O campo recebimento padrão é obrigatório.'})
-  @IsString({ message: 'O campo recebimento padrão deve ser do tipo texto.' })
-  receiptDefault!: string;
-
 }

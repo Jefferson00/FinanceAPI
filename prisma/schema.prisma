@@ -8,15 +8,18 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String?   @unique
-  name      String?
-  avatar    String?
-  phone     String?   @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Account   Account[]
-  Income    Income[]
+  id               String             @id @default(uuid())
+  email            String?            @unique
+  name             String?
+  avatar           String?
+  phone            String?            @unique
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  Account          Account[]
+  Income           Income[]
+  IncomeOnAccount  IncomeOnAccount[]
+  Expanse          Expanse[]
+  ExpanseOnAccount ExpanseOnAccount[]
 }
 
 model Account {
@@ -30,6 +33,7 @@ model Account {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   IncomesOnAccounts IncomesOnAccounts[]
+  AccountBalance    AccountBalance[]
 }
 
 model Income {
@@ -63,4 +67,57 @@ model IncomesOnAccounts {
   recurrence  String?
 
   @@id([accountId, incomeId])
+}
+
+model IncomeOnAccount {
+  id          String   @id @default(uuid())
+  paymentDate DateTime @unique @default(now())
+  month       DateTime
+  recurrence  String?
+  incomeId    String
+  accountId   String
+  value       Int
+  name        String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model AccountBalance {
+  id        String   @id @default(uuid())
+  month     DateTime
+  value     Int
+  account   Account  @relation(fields: [accountId], references: [id])
+  accountId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Expanse {
+  id             String    @id @default(uuid())
+  name           String
+  description    String?
+  value          Int
+  category       String
+  receiptDate    DateTime
+  iteration      String
+  receiptDefault String
+  startDate      DateTime
+  endDate        DateTime?
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ExpanseOnAccount {
+  id          String   @id @default(uuid())
+  paymentDate DateTime @unique @default(now())
+  month       DateTime
+  recurrence  String?
+  expanseId   String
+  accountId   String
+  value       Int
+  name        String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
 }

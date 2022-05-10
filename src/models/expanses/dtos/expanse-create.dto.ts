@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
-export class IncomesCreateDto {
+export class ExpanseCreateDto {
   @IsNotEmpty({message: 'O campo nome é obrigatório.'})
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
   @MinLength(2, { message: 'O campo nome deve ter no mínimo 2 caracteres.' })

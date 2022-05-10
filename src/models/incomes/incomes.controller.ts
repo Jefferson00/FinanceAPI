@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { Income, IncomesOnAccounts } from '@prisma/client';
+import { Income, IncomeOnAccount } from '@prisma/client';
 import { IncomeOnAccountCreateDto } from './dtos/income-on-account-create.dto';
 import { IncomesCreateDto } from './dtos/incomes-create.dto';
 import { IncomeUpdateDto } from './dtos/incomes-update.dto';
@@ -14,8 +14,17 @@ export class IncomesController {
     private readonly  incomesService: IncomesService,
 ) {}
 
-@Get('user/:userId/:date')
+@Get('user/:userId')
   async getAllUserIncomes(
+    @Param('userId') userId: string,
+  ): Promise<Income[]> {
+    return this.incomesService.incomes({
+      userId,
+    });
+  }
+
+@Get('user/:userId/:date')
+  async getAllUserIncomesByDate(
     @Param('userId') userId: string,
     @Param('date') date: string,
   ): Promise<Income[]> {
@@ -49,25 +58,11 @@ export class IncomesController {
     });
   }
 
-  @Get('onAccount/:userId/:date')
+  @Get('onAccount/:userId')
   async getAllUserIncomesOnAccount(
     @Param('userId') userId: string,
-    @Param('date') date: string,
-  ): Promise<IncomesOnAccounts[]> {
-    const lastDay = lastDayOfMonth(new Date(date))
-    lastDay.setUTCHours(23,59,59,999);
-    const firstDay = startOfMonth(new Date(date));
-    firstDay.setUTCHours(0,0,0,0);
-
-    return this.incomesService.incomesOnAccount({
-      income : {
-        userId,
-        receiptDate: {
-          gte: firstDay,
-          lt: lastDay,
-        }
-      }
-    });
+  ): Promise<IncomeOnAccount[]> {
+    return this.incomesService.incomesOnAccount({userId});
   }
 
   @Post()
@@ -80,7 +75,7 @@ export class IncomesController {
   @Post('/onAccount')
   async createIncomeOnAccount(
     @Body() data: IncomeOnAccountCreateDto,
-  ): Promise<IncomesOnAccounts> {
+  ): Promise<IncomeOnAccount> {
     return this.incomesService.createIncomeOnAccount(data);
   }
 
@@ -106,4 +101,15 @@ export class IncomesController {
       id
     },userId)
   }
+
+  @Delete('onAccount/:id/:userId')
+  async deleteIncomeOnAccount(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ): Promise<boolean> {
+    return this.incomesService.deleteIncomeOnAccount({
+      id
+    },userId)
+  }
+  
 }

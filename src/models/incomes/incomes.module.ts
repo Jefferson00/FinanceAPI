@@ -7,5 +7,6 @@ import { IncomesService } from './incomes.service';
   imports: [],
   controllers: [IncomesController],
   providers: [IncomesService, PrismaService],
+  exports: [IncomesService],
 })
 export class IncomesModule {}

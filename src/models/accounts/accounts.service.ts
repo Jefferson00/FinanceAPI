@@ -1,13 +1,17 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
-import { Account, Prisma } from '@prisma/client';
+import { Account, AccountBalance, Prisma } from '@prisma/client';
 import { AccountCreateDto } from './dtos/account-create.dto';
 import { AccountUpdateDto } from './dtos/account-update.dto';
+import { AccountBalanceCreateDto } from './dtos/account-balance-create.dto';
+import { AccountBalanceUpdateDto } from './dtos/account-balance-update.dto';
+import { IncomesService } from '../incomes/incomes.service';
+import { ExpansesService } from '../expanses/expanses.service';
 
 @Injectable()
 export class AccountsService {
   // eslint-disable-next-line prettier/prettier
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private incomeService: IncomesService, private expanseService: ExpansesService) {}
 
   async account(
     accountWhereUniqueInput: Prisma.AccountWhereUniqueInput,
@@ -25,30 +29,16 @@ export class AccountsService {
 
   async accounts(where?: Prisma.AccountWhereInput): Promise<Account[]> {
     try {
-      return await this.prisma.account.findMany({where, include: {
-        IncomesOnAccounts: {
-          select: {
-            paymentDate: true,
-            receiptDate: true,
-            recurrence: true,
-            value: true,
-            income: {
-              select: {
-                category: true,
-                description: true,
-                id: true,
-                name: true,
-                value: true,
-                receiptDate: true,
-                receiptDefault: true,
-                iteration: true,
-                startDate: true,
-                endDate: true,
-              }
-            }
-          }
-        }
-      }});
+      return await this.prisma.account.findMany({where});
+    } catch (error) {
+      Logger.log('erro ao listar contas: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async accountsBalance(where?: Prisma.AccountBalanceWhereInput): Promise<AccountBalance[]> {
+    try {
+      return await this.prisma.accountBalance.findMany({where});
     } catch (error) {
       Logger.log('erro ao listar contas: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -62,6 +52,17 @@ export class AccountsService {
       });
     } catch (error) {
       Logger.log('erro ao criar conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async createAccountBalance(data: AccountBalanceCreateDto): Promise<AccountBalance> {
+    try {
+      return this.prisma.accountBalance.create({
+        data,
+      });
+    } catch (error) {
+      Logger.log('erro ao criar saldo da conta: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
@@ -96,6 +97,74 @@ export class AccountsService {
       });
     } catch (error) {
       Logger.log('erro ao atualizar conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async updateAccountBalance(params: {
+    where: Prisma.AccountBalanceWhereUniqueInput;
+    data: AccountBalanceUpdateDto;
+  }): Promise<AccountBalance> {
+    const { where, data } = params;
+    const { accountId } = data;
+    const { id } = where;
+    try {
+      const verifyAccountBalanceExists = await this.accountsBalance({id});
+
+      if (verifyAccountBalanceExists.length === 0) {
+        throw new HttpException(
+          'ERRO: saldo da conta não encontrada',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      if (verifyAccountBalanceExists[0].accountId !== accountId) {
+        throw new HttpException(
+          'ERRO: usuário não autorizado a realizar essa ação',
+          HttpStatus.UNAUTHORIZED
+        );
+      }
+
+      return this.prisma.accountBalance.update({
+        data,
+        where,
+      });
+    } catch (error) {
+      Logger.log('erro ao atualizar saldo da conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async deleteAccountBalance(where: Prisma.AccountBalanceWhereUniqueInput): Promise<AccountBalance> {
+    try {
+      const verifyAccountExists = await this.prisma.accountBalance.findMany({where});
+
+      if (verifyAccountExists.length === 0) {
+        throw new HttpException(
+          'ERRO: conta não encontrada',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      const incomesOnAccount = await this.incomeService.incomesOnAccount( {
+        accountId: where.id
+      });
+      const expansesOnAccount = await this.expanseService.expansesOnAccount({
+        accountId: where.id
+      });
+
+      if (incomesOnAccount.length > 0 || expansesOnAccount.length > 0) {
+        throw new HttpException(
+          'ERRO: essa conta possui registros de entradas ou despesas. Nesse caso, você pode mudar o status da conta para "inativo"',
+          HttpStatus.UNAUTHORIZED
+        );
+      }
+
+      return await this.prisma.accountBalance.delete({
+        where,
+      });
+    } catch (error) {
+      Logger.log('erro ao deletar balanço da conta: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
