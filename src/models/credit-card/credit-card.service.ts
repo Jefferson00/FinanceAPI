@@ -1,13 +1,16 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CreditCard, Prisma } from '@prisma/client';
+import { isBefore } from 'date-fns';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
+import { InvoiceCreateDto } from '../invoices/dtos/invoices-create.dto';
+import { InvoiceService } from '../invoices/invoices.service';
 import { CreditCardCreateDto } from './dtos/credit-card-create.dto';
 import { CreditCardUpdateDto } from './dtos/credit-card-update.dto';
 
 @Injectable()
 export class CreditCardService {
   // eslint-disable-next-line prettier/prettier
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private invoiceService: InvoiceService) {}
 
   async creditCard(
     creditCardWhereUniqueInput: Prisma.CreditCardWhereUniqueInput,
@@ -33,9 +36,24 @@ export class CreditCardService {
 
   async createCreditCard(data: CreditCardCreateDto): Promise<CreditCard> {
     try {
-      return this.prisma.creditCard.create({
+      const card = await this.prisma.creditCard.create({
         data,
       });
+
+      const firstInvoice : InvoiceCreateDto = {
+        accountId: card.receiptDefault,
+        closingDate: card.invoiceClosing.toISOString(),
+        month: card.paymentDate.toISOString(),
+        creditCardId: card.id,
+        value: 0,
+        paymentDate: card.paymentDate.toISOString(),
+        paid:false,
+        closed: isBefore(card.invoiceClosing, new Date()),
+      }
+
+      await this.invoiceService.createInvoice(firstInvoice);
+
+      return card;
     } catch (error) {
       Logger.log('erro ao criar cartão: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
