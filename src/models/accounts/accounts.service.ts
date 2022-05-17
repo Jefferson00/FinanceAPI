@@ -187,7 +187,19 @@ export class AccountsService {
         );
       }
 
-      // Verificar entradas/saídas vinculadas
+      const incomesOnAccount = await this.incomeService.incomesOnAccount( {
+        accountId: where.id
+      });
+      const expansesOnAccount = await this.expanseService.expansesOnAccount({
+        accountId: where.id
+      });
+
+      if (incomesOnAccount.length > 0 || expansesOnAccount.length > 0) {
+        throw new HttpException(
+          'ERRO: essa conta possui registros de entradas ou despesas. Nesse caso, você pode mudar o status da conta para "inativo"',
+          HttpStatus.UNAUTHORIZED
+        );
+      }
 
       return await this.prisma.account.delete({
         where,
