@@ -140,17 +140,28 @@ model CreditCard {
 }
 
 model Invoice {
-  id           String     @id @default(uuid())
-  month        DateTime
-  closingDate  DateTime
-  paymentDate  DateTime
-  paid         Boolean
-  closed       Boolean
-  value        Int
-  creditCardId String
-  creditCard   CreditCard @relation(fields: [creditCardId], references: [id])
-  account      Account    @relation(fields: [accountId], references: [id])
-  accountId    String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id               String             @id @default(uuid())
+  month            DateTime
+  closingDate      DateTime
+  paymentDate      DateTime
+  paid             Boolean
+  closed           Boolean
+  value            Int
+  creditCardId     String
+  creditCard       CreditCard         @relation(fields: [creditCardId], references: [id])
+  account          Account            @relation(fields: [accountId], references: [id])
+  accountId        String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  ExpanseOnInvoice ExpanseOnInvoice[]
+}
+
+model ExpanseOnInvoice {
+  id         String  @id @default(uuid())
+  recurrence String?
+  expanseId  String
+  value      Int
+  name       String
+  invoiceId  String
+  invoice    Invoice @relation(fields: [invoiceId], references: [id])
 }

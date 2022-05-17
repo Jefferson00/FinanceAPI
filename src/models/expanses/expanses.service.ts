@@ -1,14 +1,16 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Expanse, ExpanseOnAccount, Prisma } from '@prisma/client';
+import { Expanse, ExpanseOnAccount, ExpanseOnInvoice, Prisma } from '@prisma/client';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
+import { InvoiceService } from '../invoices/invoices.service';
 import { ExpanseCreateDto } from './dtos/expanse-create.dto';
 import { ExpanseOnAccountCreateDto } from './dtos/expanse-on-account-create.dto';
+import { ExpanseOnInvoiceCreateDto } from './dtos/expanse-on-invoice-create.dto';
 import { ExpanseUpdateDto } from './dtos/expanse-update.dto';
 
 @Injectable()
 export class ExpansesService { 
   // eslint-disable-next-line prettier/prettier
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private invoiceService: InvoiceService) {}
 
   async expanse(
     expanseWhereUniqueInput: Prisma.ExpanseWhereUniqueInput,
@@ -169,6 +171,29 @@ export class ExpansesService {
       return true;
     } catch (error) {
       Logger.log('erro ao deletar despesa vinculada a uma conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async createExpanseOnInvoice(data: ExpanseOnInvoiceCreateDto, creditCardId: string): Promise<ExpanseOnInvoice> {
+    try {
+      const verifyInvoiceExists = await this.invoiceService.invoices({creditCardId, AND: {
+        closed: false
+      }});
+
+      if (verifyInvoiceExists.length === 0) {
+        throw new HttpException(
+          'ERRO: fatura não encontrada',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      return this.prisma.expanseOnInvoice.create({data: {
+        ...data,
+        invoiceId: verifyInvoiceExists[0].id
+      }});
+    } catch (error) {
+      Logger.log('erro ao vincular despesa na fatura: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }

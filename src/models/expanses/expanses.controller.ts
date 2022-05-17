@@ -1,9 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { Expanse, ExpanseOnAccount } from '@prisma/client';
+import { Expanse, ExpanseOnAccount, ExpanseOnInvoice } from '@prisma/client';
 import { ExpansesService } from './expanses.service';
 import {  ExpanseOnAccountCreateDto } from './dtos/expanse-on-account-create.dto';
 import {ExpanseCreateDto  } from './dtos/expanse-create.dto';
 import {ExpanseUpdateDto  } from './dtos/expanse-update.dto';
+import { ExpanseOnInvoiceCreateDto } from './dtos/expanse-on-invoice-create.dto';
 
 
 @Controller('expanses')
@@ -78,6 +79,13 @@ async deleteExpanseOnAccount(
   },userId)
 }
 
+@Post('/onInvoice/:creditCardId')
+async createExpanseOnInvoice(
+  @Body() data: ExpanseOnInvoiceCreateDto,
+  @Param('creditCardId') creditCardId: string,
+): Promise<ExpanseOnInvoice> {
+  return this.expansesService.createExpanseOnInvoice(data, creditCardId);
+}
 
 
 }
