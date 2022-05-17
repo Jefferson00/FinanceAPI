@@ -6,6 +6,7 @@ import { UserUpdateDto } from './dtos/user-update.dto';
 import { UsersService } from './users.service';
 import { diskStorage } from 'multer';
 import * as path from 'path';
+import { Transaction } from './interfaces/Transaction';
 
 @Controller('users')
 export class UsersController {
@@ -26,6 +27,13 @@ export class UsersController {
     @Param('email') email: string,
   ): Promise<User> {
     return this.userService.user({email});
+  }
+
+  @Get('/lastTransactions/:userId')
+  async getUserLastTransactions(
+    @Param('userId') userId: string,
+  ): Promise<Transaction[]> {
+    return this.userService.getUserLastTransactions(userId);
   }
 
   @Get()

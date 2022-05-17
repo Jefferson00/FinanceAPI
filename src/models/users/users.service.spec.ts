@@ -4,9 +4,12 @@ import { User, Prisma } from '@prisma/client';
 import { UsersService } from './users.service';
 import { UserCreateDto } from './dtos/user-create.dto';
 import { UserUpdateDto } from './dtos/user-update.dto';
-import { IFile } from 'src/shared/interfaces/file.interface';
+import { IFile } from '../../shared/interfaces/file.interface';
 // eslint-disable-next-line prettier/prettier
 import fs = require('fs');
+import { IncomesService } from '../incomes/incomes.service';
+import { ExpansesService } from '../expanses/expanses.service';
+import { Transaction } from './interfaces/Transaction';
 
 const userWhereUniqueInput: Prisma.UserWhereUniqueInput = {
   email: 'any@email.com',
@@ -60,20 +63,45 @@ const userCreatedWithPhone: User = {
   createdAt: new Date(),
   updatedAt: new Date(),
 };
+
+const lastTransactions: Transaction[] = [
+  {
+    id: 'any',
+    category: 'any',
+    paymentDate: new Date('2022-05-17T14:12:08.907Z'),
+    title: 'any',
+    type: 'Income',
+    value: 10000,
+  }
+];
+
 describe('UsersService', () => {
   let service: UsersService;
   let prismaService: PrismaService;
+  let incomeService: IncomesService;
+  let expanseService: ExpansesService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, PrismaService],
+      providers: [UsersService, PrismaService, IncomesService, ExpansesService],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     prismaService = module.get<PrismaService>(PrismaService);
+    incomeService = module.get<IncomesService>(IncomesService);
+    expanseService = module.get<ExpansesService>(ExpansesService);
 
     prismaService.user.findUnique = jest.fn().mockResolvedValue(user);
     prismaService.user.findMany = jest.fn().mockResolvedValue([user]);
+    incomeService.lastIncomesOnAccount = jest.fn().mockResolvedValue([{
+      id: 'any',
+      category: 'any',
+      paymentDate: new Date('2022-05-17T14:12:08.907Z'),
+      name: 'any',
+      incomeId: 'any',
+      value: 10000,
+    }]);
+    expanseService.lastExpansesOnAccount = jest.fn().mockResolvedValue([]);
   });
 
   it('should be defined', () => {
@@ -91,6 +119,22 @@ describe('UsersService', () => {
         .fn()
         .mockRejectedValueOnce(new Error());
       const response = service.user(userWhereUniqueInput);
+
+      await expect(response).rejects.toThrow();
+    });
+  });
+
+  describe('Find User Last Transactions', () => {
+    it('should be able to find user last transactions', async () => {
+      const response = await service.getUserLastTransactions('any_id');
+
+      expect(response).toEqual(lastTransactions);
+    });
+    it('should be able to throw if there is an unexpected error ', async () => {
+      incomeService.lastIncomesOnAccount = jest
+        .fn()
+        .mockRejectedValueOnce(new Error());
+      const response = service.getUserLastTransactions('any_id');
 
       await expect(response).rejects.toThrow();
     });

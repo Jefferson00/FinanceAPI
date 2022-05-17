@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Expanse, ExpanseOnAccount, Prisma } from '@prisma/client';
-import { PrismaService } from 'src/providers/database/prisma/prisma.service';
+import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { ExpanseCreateDto } from './dtos/expanse-create.dto';
 import { ExpanseOnAccountCreateDto } from './dtos/expanse-on-account-create.dto';
 import { ExpanseUpdateDto } from './dtos/expanse-update.dto';
@@ -109,6 +109,23 @@ export class ExpansesService {
   async expansesOnAccount(where?: Prisma.ExpanseOnAccountWhereInput): Promise<ExpanseOnAccount[]> {
     try {
       return await this.prisma.expanseOnAccount.findMany({where });
+    } catch (error) {
+      Logger.log('erro ao listar despesas em uma conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async lastExpansesOnAccount(where?: Prisma.ExpanseOnAccountWhereInput): Promise<ExpanseOnAccount[]> {
+    try {
+      const expanses = await this.prisma.expanseOnAccount.findMany({where, take: 3 });
+
+      await Promise.all(expanses.map(async (exp) => {
+        const findExpanse= await this.expanse({id: exp.expanseId});
+        Object.assign(exp, {category: findExpanse.category});
+        return exp;
+      }));
+
+      return expanses;
     } catch (error) {
       Logger.log('erro ao listar despesas em uma conta: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

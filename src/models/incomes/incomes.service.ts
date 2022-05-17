@@ -1,7 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Income, IncomeOnAccount, Prisma } from '@prisma/client';
-import { PrismaService } from 'src/providers/database/prisma/prisma.service';
+import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { IncomeOnAccountCreateDto } from './dtos/income-on-account-create.dto';
+import { IncomeOnAccountUpdateDto } from './dtos/income-on-account-update.dto';
 import { IncomesCreateDto } from './dtos/incomes-create.dto';
 import { IncomeUpdateDto } from './dtos/incomes-update.dto';
 
@@ -34,7 +35,24 @@ export class IncomesService {
 
   async incomesOnAccount(where?: Prisma.IncomeOnAccountWhereInput): Promise<IncomeOnAccount[]> {
     try {
-      return await this.prisma.incomeOnAccount.findMany({where });
+      return await this.prisma.incomeOnAccount.findMany({where});
+    } catch (error) {
+      Logger.log('erro ao listar entradas: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async lastIncomesOnAccount(where?: Prisma.IncomeOnAccountWhereInput): Promise<IncomeOnAccount[]> {
+    try {
+      const incomes = await this.prisma.incomeOnAccount.findMany({where, take: 3 });
+
+      await Promise.all(incomes.map(async (inc) => {
+        const findIncome = await this.income({id: inc.incomeId});
+        Object.assign(inc, {category: findIncome.category});
+        return inc;
+      }));
+
+      return incomes;
     } catch (error) {
       Logger.log('erro ao listar entradas: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -118,6 +136,40 @@ export class IncomesService {
       return this.prisma.incomeOnAccount.create({data});
     } catch (error) {
       Logger.log('erro ao vincular entrada na conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async updateIncomeOnAccount(params: {
+    where: Prisma.IncomeOnAccountWhereUniqueInput;
+    data: IncomeOnAccountUpdateDto;
+  }): Promise<IncomeOnAccount> {
+    const { where, data } = params;
+    const { userId } = data;
+    const { id } = where;
+    try {
+      const verifyIncomeOnAccountExists = await this.incomesOnAccount({id});
+
+      if (verifyIncomeOnAccountExists.length === 0) {
+        throw new HttpException(
+          'ERRO: entrada vinculada não encontrada',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      if (verifyIncomeOnAccountExists[0].userId !== userId) {
+        throw new HttpException(
+          'ERRO: usuário não autorizado a realizar essa ação',
+          HttpStatus.UNAUTHORIZED
+        );
+      }
+
+      return this.prisma.incomeOnAccount.update({
+        data,
+        where,
+      });
+    } catch (error) {
+      Logger.log('erro ao atualizar entrada vinculada: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }

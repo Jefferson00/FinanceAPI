@@ -5,6 +5,7 @@ import { IncomesCreateDto } from './dtos/incomes-create.dto';
 import { IncomeUpdateDto } from './dtos/incomes-update.dto';
 import { IncomesService } from './incomes.service';
 import { lastDayOfMonth, startOfMonth } from 'date-fns';
+import { IncomeOnAccountUpdateDto } from './dtos/income-on-account-update.dto';
 
 
 @Controller('incomes')
@@ -101,6 +102,20 @@ export class IncomesController {
       id
     },userId)
   }
+
+  @Put(':id/onAccount')
+  async updateIncomeOnAccount(
+    @Body() data: IncomeOnAccountUpdateDto,
+    @Param('id') id: string
+  ): Promise<IncomeOnAccount> {
+    return this.incomesService.updateIncomeOnAccount({
+      data,
+      where: {
+        id
+      }
+    })
+  }
+
 
   @Delete('onAccount/:id/:userId')
   async deleteIncomeOnAccount(

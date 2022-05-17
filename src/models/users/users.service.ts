@@ -3,15 +3,18 @@ import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { User, Prisma } from '@prisma/client';
 import { UserCreateDto } from './dtos/user-create.dto';
 import { UserUpdateDto } from './dtos/user-update.dto';
-import { IFile } from 'src/shared/interfaces/file.interface';
+import { IFile } from '../../shared/interfaces/file.interface';
 import * as path from 'path';
 // eslint-disable-next-line prettier/prettier
 import fs = require('fs');
+import { Transaction } from './interfaces/Transaction';
+import { IncomesService } from '../incomes/incomes.service';
+import { ExpansesService } from '../expanses/expanses.service';
 
 @Injectable()
 export class UsersService {
   // eslint-disable-next-line prettier/prettier
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private incomesService: IncomesService, private expanseService: ExpansesService) {}
 
   async user(
     userWhereUniqueInput: Prisma.UserWhereUniqueInput,
@@ -31,6 +34,42 @@ export class UsersService {
       return await this.prisma.user.findMany();
     } catch (error) {
       Logger.log('erro ao listar usuários: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async getUserLastTransactions(userId: string): Promise<Transaction[]> {
+    try {
+      const lastIncomes = await this.incomesService.lastIncomesOnAccount({
+        userId,
+      });
+      const lastExpanses = await this.expanseService.lastExpansesOnAccount({
+        userId,
+      });
+
+      const allTransactions = [...lastIncomes, ...lastExpanses];
+
+      const lastTransactions : any = allTransactions.sort(
+        (a, b) => Number(new Date(b.paymentDate)) - Number(new Date(a.paymentDate)),
+      );
+
+
+    const transactions: Transaction[] = [];
+
+    lastTransactions.slice(0, 3).map(transaction => {
+      transactions.push({
+        id: transaction.id,
+        category: transaction.category || 'Outro',
+        paymentDate: new Date(transaction.paymentDate),
+        title: transaction.name,
+        type: transaction?.incomeId ? 'Income' : 'Expanse',
+        value: transaction.value,
+      });
+    });
+
+      return transactions;
+    } catch (error) {
+      Logger.log('erro ao listar últimas transações: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }

@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthMiddleware } from 'src/auth/auth.middleware';
-import { ExpansesModule } from 'src/models/expanses/expanses.module';
+import { AuthMiddleware } from '../auth/auth.middleware';
+import { ExpansesModule } from '../models/expanses/expanses.module';
 
 @Module({
   imports: [AccountsModule, UsersModule, IncomesModule, ExpansesModule],
