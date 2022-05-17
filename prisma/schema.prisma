@@ -20,6 +20,7 @@ model User {
   IncomeOnAccount  IncomeOnAccount[]
   Expanse          Expanse[]
   ExpanseOnAccount ExpanseOnAccount[]
+  CreditCard       CreditCard[]
 }
 
 model Account {
@@ -120,4 +121,18 @@ model ExpanseOnAccount {
   name        String
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model CreditCard {
+  id             String   @id @default(uuid())
+  name           String
+  limit          Int
+  paymentDate    DateTime
+  invoiceClosing DateTime
+  color          String
+  receiptDefault String
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

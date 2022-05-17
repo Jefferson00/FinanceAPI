@@ -11,9 +11,16 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthMiddleware } from '../auth/auth.middleware';
 import { ExpansesModule } from '../models/expanses/expanses.module';
+import { CreditCardModule } from '../models/credit-card/credit-card.module';
 
 @Module({
-  imports: [AccountsModule, UsersModule, IncomesModule, ExpansesModule],
+  imports: [
+    AccountsModule,
+    UsersModule,
+    IncomesModule,
+    ExpansesModule,
+    CreditCardModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
