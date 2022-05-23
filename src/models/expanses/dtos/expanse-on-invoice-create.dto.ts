@@ -21,4 +21,8 @@ export class ExpanseOnInvoiceCreateDto {
   @IsNotEmpty({message: 'O nome é obrigatório.'})
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
   name!: string;
+
+  @IsNotEmpty({message: 'O valor dia é obrigatório.'})
+  @IsInt({ message: 'O campo valor dia ser do tipo numérico.' })
+  day!: number;
 }

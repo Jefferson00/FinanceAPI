@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Expanse, ExpanseOnAccount, ExpanseOnInvoice, Prisma } from '@prisma/client';
+import { addMonths } from 'date-fns';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { InvoiceService } from '../invoices/invoices.service';
 import { ExpanseCreateDto } from './dtos/expanse-create.dto';
@@ -36,9 +37,47 @@ export class ExpansesService {
 
   async createExpanse(data: ExpanseCreateDto): Promise<Expanse> {
     try {
-      return this.prisma.expanse.create({
-        data,
+      const response = await this.prisma.$transaction(async () => {
+        const verifyInvoiceExists = await this.invoiceService.invoices({creditCardId: data.receiptDefault, AND: {
+          closed: false
+        }});
+
+        
+        if (verifyInvoiceExists.length > 0){
+          const newStartDate = new Date(verifyInvoiceExists[0].month);
+          newStartDate.setDate(new Date(data.startDate).getDate());
+
+          const newEndDate = data.iteration !== 'Mensal' ? addMonths(newStartDate, Number(data.iteration) - 1) : null;
+          
+          const expanse = await this.prisma.expanse.create({
+            data: {
+              ...data,
+              startDate: newStartDate,
+              endDate: newEndDate,
+            },
+          });
+
+          await this.createExpanseOnInvoice({
+            expanseId: expanse.id,
+            name: expanse.name,
+            value: expanse.value,
+            day: expanse.createdAt.getDay(),
+          }, expanse.receiptDefault)
+
+          await this.invoiceService.updateInvoice({where: {id: verifyInvoiceExists[0].id}, data: {
+            value: verifyInvoiceExists[0].value +  expanse.value
+          }})
+          return expanse;
+        }
+
+        const expanse = await this.prisma.expanse.create({
+          data,
+        });
+
+        return expanse;
       });
+
+      return response;
     } catch (error) {
       Logger.log('erro ao criar despesa: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -106,11 +145,18 @@ export class ExpansesService {
     }
   }
 
-
-
   async expansesOnAccount(where?: Prisma.ExpanseOnAccountWhereInput): Promise<ExpanseOnAccount[]> {
     try {
       return await this.prisma.expanseOnAccount.findMany({where });
+    } catch (error) {
+      Logger.log('erro ao listar despesas em uma conta: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async expansesOnInvoice(where?: Prisma.ExpanseOnInvoiceWhereInput): Promise<ExpanseOnInvoice[]> {
+    try {
+      return await this.prisma.expanseOnInvoice.findMany({where });
     } catch (error) {
       Logger.log('erro ao listar despesas em uma conta: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -197,4 +243,37 @@ export class ExpansesService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
+
+  async deleteExpanseOnInvoice(where: Prisma.ExpanseOnInvoiceWhereUniqueInput): Promise<ExpanseOnInvoice> {
+    try {
+      const verifyExpanseExists = await this.expansesOnInvoice(where);
+
+      if (verifyExpanseExists.length === 0) {
+        throw new HttpException(
+          'ERRO: despesa na fatura não encontrada',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
+      const response = await this.prisma.$transaction(async() => {
+        const invoice = await this.invoiceService.invoice({id: verifyExpanseExists[0].invoiceId});
+
+        await this.invoiceService.updateInvoice({where: {
+          id: invoice.id,
+        }, data: {
+          value: invoice.value - verifyExpanseExists[0].value
+        }});
+
+        return await this.prisma.expanseOnInvoice.delete({
+          where,
+        });
+      })
+
+      return response;
+    } catch (error) {
+      Logger.log('erro ao deletar despesa na fatura: ', error);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
 }

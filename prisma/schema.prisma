@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
 }
 
 datasource db {
@@ -162,6 +163,7 @@ model ExpanseOnInvoice {
   expanseId  String
   value      Int
   name       String
+  day        Int
   invoiceId  String
   invoice    Invoice @relation(fields: [invoiceId], references: [id])
 }

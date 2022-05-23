@@ -11,5 +11,6 @@ import { AccountsService } from './accounts.service';
   imports: [UsersModule, IncomesModule, ExpansesModule],
   controllers: [AccountsController],
   providers: [AccountsService, PrismaService],
+  exports: [AccountsService],
 })
 export class AccountsModule {}

@@ -1,7 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { CreditCard, Prisma } from '@prisma/client';
-import { isBefore } from 'date-fns';
+import { addMonths, isBefore } from 'date-fns';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
+import { AccountsService } from '../accounts/accounts.service';
 import { InvoiceCreateDto } from '../invoices/dtos/invoices-create.dto';
 import { InvoiceService } from '../invoices/invoices.service';
 import { CreditCardCreateDto } from './dtos/credit-card-create.dto';
@@ -10,7 +11,7 @@ import { CreditCardUpdateDto } from './dtos/credit-card-update.dto';
 @Injectable()
 export class CreditCardService {
   // eslint-disable-next-line prettier/prettier
-  constructor(private prisma: PrismaService, private invoiceService: InvoiceService) {}
+  constructor(private prisma: PrismaService, private invoiceService: InvoiceService, private accountService: AccountsService) {}
 
   async creditCard(
     creditCardWhereUniqueInput: Prisma.CreditCardWhereUniqueInput,
@@ -27,7 +28,24 @@ export class CreditCardService {
 
   async creditCards(where?: Prisma.CreditCardWhereInput): Promise<CreditCard[]> {
     try {
-      return await this.prisma.creditCard.findMany({where});
+      return await this.prisma.creditCard.findMany({where, include: {
+        Invoice: {
+          where:{
+            paid: false
+          },
+          include: {
+            ExpanseOnInvoice: {
+              select:{
+                id: true,
+                expanseId: true,
+                name: true,
+                value: true,
+                day: true,
+              }
+            }
+          }
+        }
+      }});
     } catch (error) {
       Logger.log('erro ao listar cartões: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -36,22 +54,46 @@ export class CreditCardService {
 
   async createCreditCard(data: CreditCardCreateDto): Promise<CreditCard> {
     try {
+      const verifyIfAccountExists = await this.accountService.account({id: data.receiptDefault});
+
+      if (!verifyIfAccountExists){
+        throw new HttpException(
+          'ERRO: conta padrão não encontrada.',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
       const card = await this.prisma.creditCard.create({
         data,
       });
 
-      const firstInvoice : InvoiceCreateDto = {
-        accountId: card.receiptDefault,
-        closingDate: card.invoiceClosing.toISOString(),
-        month: card.paymentDate.toISOString(),
-        creditCardId: card.id,
-        value: 0,
-        paymentDate: card.paymentDate.toISOString(),
-        paid:false,
-        closed: isBefore(card.invoiceClosing, new Date()),
-      }
+      if (isBefore(card.invoiceClosing, new Date())){
+        const firstInvoice : InvoiceCreateDto = {
+          accountId: card.receiptDefault,
+          closingDate: addMonths(card.invoiceClosing, 1).toISOString(),
+          month: addMonths(card.paymentDate, 1).toISOString(),
+          creditCardId: card.id,
+          value: 0,
+          paymentDate: addMonths(card.paymentDate, 1).toISOString(),
+          paid:false,
+          closed: false,
+        }
 
-      await this.invoiceService.createInvoice(firstInvoice);
+        await this.invoiceService.createInvoice(firstInvoice);
+      } else {
+        const firstInvoice : InvoiceCreateDto = {
+          accountId: card.receiptDefault,
+          closingDate: card.invoiceClosing.toISOString(),
+          month: card.paymentDate.toISOString(),
+          creditCardId: card.id,
+          value: 0,
+          paymentDate: card.paymentDate.toISOString(),
+          paid:false,
+          closed: false,
+        }
+
+        await this.invoiceService.createInvoice(firstInvoice);
+      }
 
       return card;
     } catch (error) {
@@ -112,7 +154,34 @@ export class CreditCardService {
         );
       }
 
-      // verificar faturas
+      const findOpenInvoices = await this.invoiceService.invoices({
+        creditCardId: verifyCreditCardExists.id, AND: {
+          closed: false,
+        }
+      });
+
+      if (findOpenInvoices.length > 0){
+        const expansesOnInvoice = await this.prisma.expanseOnInvoice.findFirst({
+          where: {
+            invoiceId: findOpenInvoices[0].id
+          }
+        });
+
+        if (expansesOnInvoice) {
+          throw new HttpException(
+            'ERRO: esse cartão possui despesas na fatura em aberto',
+            HttpStatus.BAD_REQUEST
+          );
+        }
+      }
+
+      const findAllInvoices = await this.invoiceService.invoices({
+        creditCardId: verifyCreditCardExists.id
+      });
+
+      await Promise.all(findAllInvoices.map(async(invoice) => {
+        await this.invoiceService.deleteInvoice({id: invoice.id});
+      }));
 
       return await this.prisma.creditCard.delete({
         where,

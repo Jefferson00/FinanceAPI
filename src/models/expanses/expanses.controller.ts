@@ -87,5 +87,20 @@ async createExpanseOnInvoice(
   return this.expansesService.createExpanseOnInvoice(data, creditCardId);
 }
 
+@Get('onInvoice/:invoiceId')
+async getAllUserExpanseOnInvoice(
+  @Param('invoiceId') invoiceId: string,
+): Promise<ExpanseOnInvoice[]> {
+  return this.expansesService.expansesOnInvoice({invoiceId});
+}
+
+@Delete('/onInvoice/:id/onInvoice')
+async deleteExpanseOnInvoice(
+  @Param('id') id: string,
+): Promise<ExpanseOnInvoice> {
+  return this.expansesService.deleteExpanseOnInvoice({
+    id
+  })
+}
 
 }

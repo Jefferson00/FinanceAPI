@@ -4,6 +4,7 @@ import { addMonths } from 'date-fns';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { InvoiceCreateDto } from './dtos/invoices-create.dto';
 import { InvoiceUpdateDto } from './dtos/invoices-update.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class InvoiceService {
@@ -89,6 +90,7 @@ export class InvoiceService {
     }
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async verifyInvoice() : Promise<void> {
     try {
       const currentInvoices = await this.invoices({
@@ -126,6 +128,7 @@ export class InvoiceService {
           })
         }));
       }
+      Logger.log('faturas verificadas');
     } catch (error) {
       Logger.log('erro ao verificar fatura: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

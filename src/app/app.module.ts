@@ -13,9 +13,11 @@ import { AuthMiddleware } from '../auth/auth.middleware';
 import { ExpansesModule } from '../models/expanses/expanses.module';
 import { CreditCardModule } from '../models/credit-card/credit-card.module';
 import { InvoicesModule } from '../models/invoices/invoices.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     AccountsModule,
     UsersModule,
     IncomesModule,
