@@ -94,6 +94,21 @@ export class IncomesService {
         );
       }
 
+      const incomesOnAccount = await this.incomesOnAccount({
+        incomeId: verifyIncomeExists.id
+      });
+
+      await Promise.all(incomesOnAccount.map(async incomeOnAccount => {
+        await this.prisma.incomeOnAccount.update({
+          data: {
+            name: data.name
+          },
+          where: {
+            id: incomeOnAccount.id
+          }
+        })
+      }));
+
       return this.prisma.income.update({
         data,
         where,

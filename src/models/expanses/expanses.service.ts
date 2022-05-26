@@ -108,6 +108,21 @@ export class ExpansesService {
         );
       }
 
+      const expansesOnAccount = await this.expansesOnAccount({
+        expanseId: verifyExpanseExists.id
+      });
+
+      await Promise.all(expansesOnAccount.map(async expanseOnAccount => {
+        await this.prisma.expanseOnAccount.update({
+          data: {
+            name: data.name
+          },
+          where: {
+            id: expanseOnAccount.id
+          }
+        })
+      }));
+
       return this.prisma.expanse.update({
         data,
         where,
