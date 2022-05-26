@@ -1,10 +1,11 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Invoice, Prisma } from '@prisma/client';
-import { addMonths } from 'date-fns';
+import { addMonths, lastDayOfMonth, startOfMonth } from 'date-fns';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { InvoiceCreateDto } from './dtos/invoices-create.dto';
 import { InvoiceUpdateDto } from './dtos/invoices-update.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+
 
 @Injectable()
 export class InvoiceService {
@@ -60,6 +61,37 @@ export class InvoiceService {
         );
       }
 
+      if (data.paid !== undefined && data.paid !== verifyInvoiceExists.paid){
+        const response = await this.prisma.$transaction(async () =>{
+          const currentAccountBalance = await this.prisma.accountBalance.findFirst({where: {
+            accountId: verifyInvoiceExists.accountId,
+            month: {
+              lte: new Date(),
+            }
+          }});
+
+          if(data.paid){
+            await this.prisma.accountBalance.update({data:{
+              value: currentAccountBalance.value - verifyInvoiceExists.value
+            }, where: {
+              id: currentAccountBalance.id
+            }});
+          } else {
+            await this.prisma.accountBalance.update({data:{
+              value: currentAccountBalance.value + verifyInvoiceExists.value
+            }, where: {
+              id: currentAccountBalance.id
+            }});
+          }
+
+          return this.prisma.invoice.update({
+            data,
+            where,
+          });
+        });
+        return response;
+      }
+
       return this.prisma.invoice.update({
         data,
         where,
@@ -93,42 +125,89 @@ export class InvoiceService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async verifyInvoice() : Promise<void> {
     try {
-      const currentInvoices = await this.invoices({
-        closingDate: {
-          lte: new Date(),
-        },
-        AND: {
-          closed: false
+      await this.prisma.$transaction(async() => {
+        const currentInvoices = await this.invoices({
+          closingDate: {
+            lte: new Date(),
+          },
+          AND: {
+            closed: false
+          }
+        });
+
+        if(currentInvoices.length > 0) {
+          await Promise.all(currentInvoices.map(async(invoice) => {
+            await this.prisma.invoice.update({
+              data: {
+                ...invoice,
+                closed: true,
+              },
+              where: {
+                id: invoice.id
+              },
+            });
+  
+            const invoiceCreated = await this.prisma.invoice.create({
+              data: {
+                closed: false,
+                paid: false,
+                value: 0,
+                closingDate: addMonths(invoice.closingDate, 1),
+                month: addMonths(invoice.month, 1),
+                paymentDate: addMonths(invoice.paymentDate, 1),
+                accountId: invoice.accountId,
+                creditCardId: invoice.creditCardId,
+              }
+            });
+  
+            const lastDay = lastDayOfMonth(new Date())
+            lastDay.setUTCHours(23,59,59,999);
+            const firstDay = startOfMonth(new Date());
+            firstDay.setUTCHours(0,0,0,0);
+  
+            const expansesOnCreditCard = await this.prisma.expanse.findMany({where: {
+              OR: [{
+                receiptDefault:  invoice.creditCardId,
+                startDate: {
+                  lte: lastDay,
+                },
+                endDate:{
+                  gte: firstDay
+                }
+              }, {
+                receiptDefault:  invoice.creditCardId,
+                startDate: {
+                  lte: lastDay,
+                },
+                endDate:null
+              }]
+            }});
+  
+            let sumValue = 0;
+  
+            await Promise.all(expansesOnCreditCard.map(async(exp) => {
+              await this.prisma.expanseOnInvoice.create({
+                data: {
+                  day: exp.startDate.getUTCDate(),
+                  expanseId: exp.id,
+                  name: exp.name,
+                  value: exp.value,
+                  invoiceId: invoiceCreated.id,
+                }
+              });
+  
+              sumValue = sumValue + exp.value
+            }));
+  
+            await this.updateInvoice({where: {
+              id: invoiceCreated.id,
+            }, data: {
+              value: invoiceCreated.value + sumValue
+            }});
+          }));
         }
+        Logger.log('faturas verificadas');
       });
-
-      if(currentInvoices.length > 0) {
-        await Promise.all(currentInvoices.map(async(invoice) => {
-          await this.prisma.invoice.update({
-            data: {
-              ...invoice,
-              closed: true,
-            },
-            where: {
-              id: invoice.id
-            },
-          });
-
-          await this.prisma.invoice.create({
-            data: {
-              closed: false,
-              paid: false,
-              value: 0,
-              closingDate: addMonths(invoice.closingDate, 1),
-              month: addMonths(invoice.month, 1),
-              paymentDate: invoice.paymentDate,
-              accountId: invoice.accountId,
-              creditCardId: invoice.creditCardId,
-            }
-          })
-        }));
-      }
-      Logger.log('faturas verificadas');
     } catch (error) {
       Logger.log('erro ao verificar fatura: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

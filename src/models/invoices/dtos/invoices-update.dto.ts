@@ -7,6 +7,14 @@ export class InvoiceUpdateDto {
   paymentDate?: string;
 
   @IsOptional()
+  @IsString({ message: 'O campo data de pagamento deve ser do tipo texto.' })
+  closingDate?: string;
+
+  @IsOptional()
+  @IsString({ message: 'O campo data de pagamento deve ser do tipo texto.' })
+  month?: string;
+
+  @IsOptional()
   @IsBoolean({ message: 'O campo pago deve ser do tipo booleano.' })
   paid?: boolean;
 

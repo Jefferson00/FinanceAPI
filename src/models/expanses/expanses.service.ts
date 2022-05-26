@@ -108,21 +108,38 @@ export class ExpansesService {
         );
       }
 
-      const expansesOnAccount = await this.expansesOnAccount({
-        expanseId: verifyExpanseExists.id
-      });
-
-      await Promise.all(expansesOnAccount.map(async expanseOnAccount => {
-        await this.prisma.expanseOnAccount.update({
-          data: {
-            name: data.name
-          },
-          where: {
-            id: expanseOnAccount.id
-          }
-        })
-      }));
-
+      if (data.name && data.name !== verifyExpanseExists.name){
+        const expansesOnAccount = await this.expansesOnAccount({
+          expanseId: verifyExpanseExists.id
+        });
+  
+        const expansesOnInvoice = await this.expansesOnInvoice({
+          expanseId: verifyExpanseExists.id
+        });
+  
+  
+        await Promise.all(expansesOnAccount.map(async expanseOnAccount => {
+          await this.prisma.expanseOnAccount.update({
+            data: {
+              name: data.name
+            },
+            where: {
+              id: expanseOnAccount.id
+            }
+          })
+        }));
+  
+        await Promise.all(expansesOnInvoice.map(async expanseOnInvoice => {
+          await this.prisma.expanseOnAccount.update({
+            data: {
+              name: data.name
+            },
+            where: {
+              id: expanseOnInvoice.id
+            }
+          })
+        }));  
+      }
       return this.prisma.expanse.update({
         data,
         where,
