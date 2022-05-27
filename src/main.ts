@@ -3,9 +3,12 @@ import { AppModule } from './app/app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import * as path from 'path';
+import { PrismaService } from './providers/database/prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const prismaService = app.get(PrismaService);
+  await prismaService.enableShutdownHooks(app);
   app.enableCors();
   app.useGlobalPipes(
     new ValidationPipe({

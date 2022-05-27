@@ -30,9 +30,6 @@ export class CreditCardService {
     try {
       return await this.prisma.creditCard.findMany({where, include: {
         Invoice: {
-          where:{
-            paid: false
-          },
           include: {
             ExpanseOnInvoice: {
               select:{

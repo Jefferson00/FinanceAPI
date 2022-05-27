@@ -63,12 +63,30 @@ export class InvoiceService {
 
       if (data.paid !== undefined && data.paid !== verifyInvoiceExists.paid){
         const response = await this.prisma.$transaction(async () =>{
-          const currentAccountBalance = await this.prisma.accountBalance.findFirst({where: {
+          const currentAccountBalanceExists = await this.prisma.accountBalance.findFirst({where: {
             accountId: verifyInvoiceExists.accountId,
             month: {
               lte: new Date(),
             }
           }});
+          
+          let currentAccountBalance;
+          if (currentAccountBalanceExists) {
+            currentAccountBalance = currentAccountBalanceExists;
+          } else {
+             //criar balanço caso não exista
+            const account = await this.prisma.account.findFirst({where:{
+              id: verifyInvoiceExists.accountId,
+            }});
+
+            const accountBalanceCreated = await this.prisma.accountBalance.create({data: {
+              month: new Date(),
+              value: account.initialValue,
+              accountId: account.id
+            }});
+            
+            currentAccountBalance = accountBalanceCreated;
+          }
 
           if(data.paid){
             await this.prisma.accountBalance.update({data:{
@@ -182,6 +200,8 @@ export class InvoiceService {
                 endDate:null
               }]
             }});
+
+            console.log(expansesOnCreditCard)
   
             let sumValue = 0;
   
