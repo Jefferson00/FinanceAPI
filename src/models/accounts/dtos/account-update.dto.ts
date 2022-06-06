@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class AccountUpdateDto {
   @IsOptional()
@@ -19,4 +19,8 @@ export class AccountUpdateDto {
   @IsOptional()
   @IsString({ message: 'O campo status deve ser do tipo texto.' })
   status?: string;
+
+  @IsOptional()
+  @IsInt({ message: 'O campo saldo da conta deve ser do tipo numérico.' })
+  balance?: number;
 }

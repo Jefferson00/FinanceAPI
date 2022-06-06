@@ -29,7 +29,20 @@ export class AccountsService {
 
   async accounts(where?: Prisma.AccountWhereInput): Promise<Account[]> {
     try {
-      return await this.prisma.account.findMany({where});
+      const accounts = await this.prisma.account.findMany({where});
+
+      await Promise.all(accounts.map(async account => {
+        const incomesOnAccount = await this.prisma.incomeOnAccount.findMany({where: {
+          accountId: account.id
+        }});
+
+        const expansesOnAccount = await this.prisma.expanseOnAccount.findMany({where: {
+          accountId: account.id
+        }});
+        Object.assign(account, {incomesOnAccount, expansesOnAccount});
+      }));
+
+      return accounts;
     } catch (error) {
       Logger.log('erro ao listar contas: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -47,8 +60,24 @@ export class AccountsService {
 
   async createAccount(data: AccountCreateDto): Promise<Account> {
     try {
+      const userExists = await this.prisma.user.findFirst({
+        where: {
+          id: data.userId
+        }
+      });
+
+      if(!userExists){
+        throw new HttpException(
+          'ERRO: usuário não encontrado',
+          HttpStatus.NOT_FOUND
+        );
+      }
+      
       return this.prisma.account.create({
-        data,
+        data: {
+          ...data,
+          balance: data.initialValue,
+        },
       });
     } catch (error) {
       Logger.log('erro ao criar conta: ', error);
@@ -146,11 +175,15 @@ export class AccountsService {
         );
       }
 
-      const incomesOnAccount = await this.incomeService.incomesOnAccount( {
-        accountId: where.id
+      const incomesOnAccount = await this.prisma.incomeOnAccount.findMany( {
+        where: {
+          accountId: where.id
+        }
       });
-      const expansesOnAccount = await this.expanseService.expansesOnAccount({
-        accountId: where.id
+      const expansesOnAccount = await this.prisma.expanseOnAccount.findMany({
+        where: {
+          accountId: where.id
+        }
       });
 
       if (incomesOnAccount.length > 0 || expansesOnAccount.length > 0) {
@@ -187,11 +220,15 @@ export class AccountsService {
         );
       }
 
-      const incomesOnAccount = await this.incomeService.incomesOnAccount( {
-        accountId: where.id
+      const incomesOnAccount = await this.prisma.incomeOnAccount.findMany( {
+        where: {
+          accountId: where.id
+        }
       });
-      const expansesOnAccount = await this.expanseService.expansesOnAccount({
-        accountId: where.id
+      const expansesOnAccount = await this.prisma.expanseOnAccount.findMany({
+        where: {
+          accountId: where.id
+        }
       });
 
       if (incomesOnAccount.length > 0 || expansesOnAccount.length > 0) {

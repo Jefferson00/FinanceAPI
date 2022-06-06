@@ -18,12 +18,24 @@ export class AccountsController {
     return this.accountService.accounts();
   }
 
-  @Get('user/:userId')
+  @Get('all/user/:userId')
   async getAllUserAccounts(
     @Param('userId') userId: string,
   ): Promise<Account[]> {
     return this.accountService.accounts({
       userId,
+    });
+  }
+
+  @Get('active/user/:userId')
+  async getAllUserActiveAccounts(
+    @Param('userId') userId: string,
+  ): Promise<Account[]> {
+    return this.accountService.accounts({
+      userId,
+      AND:{
+        status: 'active'
+      }
     });
   }
 
