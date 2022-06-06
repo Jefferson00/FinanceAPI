@@ -1,19 +1,22 @@
-import { AccountsModule } from './../models/accounts/accounts.module';
-import { UsersModule } from './../models/users/users.module';
-import { IncomesModule } from './../models/incomes/incomes.module';
 import {
   MiddlewareConsumer,
   Module,
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { AccountsModule } from './../models/accounts/accounts.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { UsersModule } from './../models/users/users.module';
+import { IncomesModule } from './../models/incomes/incomes.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthMiddleware } from '../auth/auth.middleware';
 import { ExpansesModule } from '../models/expanses/expanses.module';
 import { CreditCardModule } from '../models/credit-card/credit-card.module';
 import { InvoicesModule } from '../models/invoices/invoices.module';
-import { ScheduleModule } from '@nestjs/schedule';
+import { IncomesOnAccountModule } from '../models/incomesOnAccount/incomesOnAccount.module';
+import { ExpansesOnAccountModule } from '../models/expansesOnAccount/expansesOnAccount.module';
+import { ExpansesOnInvoiceModule } from 'src/models/expansesOnInvoice/expansesOnInvoice.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     ExpansesModule,
     CreditCardModule,
     InvoicesModule,
+    IncomesOnAccountModule,
+    ExpansesOnAccountModule,
+    ExpansesOnInvoiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

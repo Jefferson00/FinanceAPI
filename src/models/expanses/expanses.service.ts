@@ -1,17 +1,20 @@
+/* eslint-disable prettier/prettier */
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Expanse, ExpanseOnAccount, ExpanseOnInvoice, Prisma } from '@prisma/client';
+import { Expanse, ExpanseOnAccount, Prisma } from '@prisma/client';
 import { addMonths } from 'date-fns';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
+import { ExpansesOnInvoiceService } from '../expansesOnInvoice/expansesOnInvoice.service';
 import { InvoiceService } from '../invoices/invoices.service';
 import { ExpanseCreateDto } from './dtos/expanse-create.dto';
-import { ExpanseOnAccountCreateDto } from './dtos/expanse-on-account-create.dto';
-import { ExpanseOnInvoiceCreateDto } from './dtos/expanse-on-invoice-create.dto';
 import { ExpanseUpdateDto } from './dtos/expanse-update.dto';
 
 @Injectable()
 export class ExpansesService { 
-  // eslint-disable-next-line prettier/prettier
-  constructor(private prisma: PrismaService, private invoiceService: InvoiceService) {}
+  constructor(
+    private prisma: PrismaService, 
+    private invoiceService: InvoiceService, 
+    private expansesOnInvoiceService: ExpansesOnInvoiceService
+) {}
 
   async expanse(
     expanseWhereUniqueInput: Prisma.ExpanseWhereUniqueInput,
@@ -37,6 +40,24 @@ export class ExpansesService {
 
   async createExpanse(data: ExpanseCreateDto): Promise<Expanse> {
     try {
+      const accountExists = await this.prisma.account.findFirst({where: {
+        id: data.receiptDefault,
+        AND: {
+          status: 'active'
+        }
+      }});
+
+      const creditCardExists = await this.prisma.creditCard.findFirst({where: {
+        id: data.receiptDefault,
+      }})
+
+      if (!accountExists && !creditCardExists) {
+        throw new HttpException(
+          'ERRO: conta de recebimento padrão não encontrada',
+          HttpStatus.NOT_FOUND
+        );
+      }
+
       const response = await this.prisma.$transaction(async () => {
         const verifyInvoiceExists = await this.invoiceService.invoices({creditCardId: data.receiptDefault, AND: {
           closed: false
@@ -57,11 +78,11 @@ export class ExpansesService {
             },
           });
 
-          await this.createExpanseOnInvoice({
+          await this.expansesOnInvoiceService.createExpanseOnInvoice({
             expanseId: expanse.id,
             name: expanse.name,
             value: expanse.value,
-            day: expanse.createdAt.getDay(),
+            day: expanse.startDate.getUTCDate(),
           }, expanse.receiptDefault)
 
           await this.invoiceService.updateInvoice({where: {id: verifyInvoiceExists[0].id}, data: {
@@ -109,11 +130,13 @@ export class ExpansesService {
       }
 
       if (data.name && data.name !== verifyExpanseExists.name){
-        const expansesOnAccount = await this.expansesOnAccount({
+        const expansesOnAccount = await this.prisma.expanseOnAccount.findMany({
+         where: {
           expanseId: verifyExpanseExists.id
+         }
         });
   
-        const expansesOnInvoice = await this.expansesOnInvoice({
+        const expansesOnInvoice = await this.expansesOnInvoiceService.expansesOnInvoice({
           expanseId: verifyExpanseExists.id
         });
   
@@ -177,24 +200,6 @@ export class ExpansesService {
     }
   }
 
-  async expansesOnAccount(where?: Prisma.ExpanseOnAccountWhereInput): Promise<ExpanseOnAccount[]> {
-    try {
-      return await this.prisma.expanseOnAccount.findMany({where });
-    } catch (error) {
-      Logger.log('erro ao listar despesas em uma conta: ', error);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  async expansesOnInvoice(where?: Prisma.ExpanseOnInvoiceWhereInput): Promise<ExpanseOnInvoice[]> {
-    try {
-      return await this.prisma.expanseOnInvoice.findMany({where });
-    } catch (error) {
-      Logger.log('erro ao listar despesas em uma conta: ', error);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
   async lastExpansesOnAccount(where?: Prisma.ExpanseOnAccountWhereInput): Promise<ExpanseOnAccount[]> {
     try {
       const expanses = await this.prisma.expanseOnAccount.findMany({where, take: 3 });
@@ -211,101 +216,4 @@ export class ExpansesService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
-
-  async createExpanseOnAccount(data: ExpanseOnAccountCreateDto): Promise<ExpanseOnAccount> {
-    try {
-      return this.prisma.expanseOnAccount.create({data});
-    } catch (error) {
-      Logger.log('erro ao vincular despesa na conta: ', error);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-
-  async deleteExpanseOnAccount(where: Prisma.ExpanseOnAccountWhereUniqueInput, userId: string): Promise<boolean> {
-    try {
-      const verifyExpanseOnAccountExists = await this.prisma.expanseOnAccount.findUnique({
-        where
-      })
-
-      if (!verifyExpanseOnAccountExists) {
-        throw new HttpException(
-          'ERRO: despesa vinculada a conta não encontrada',
-          HttpStatus.NOT_FOUND
-        );
-      }
-
-      if (verifyExpanseOnAccountExists.userId !== userId) {
-        throw new HttpException(
-          'ERRO: usuário não autorizado a realizar essa ação',
-          HttpStatus.UNAUTHORIZED
-        );
-      }
-
-      await this.prisma.expanseOnAccount.delete({
-        where,
-      });
-
-      return true;
-    } catch (error) {
-      Logger.log('erro ao deletar despesa vinculada a uma conta: ', error);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  async createExpanseOnInvoice(data: ExpanseOnInvoiceCreateDto, creditCardId: string): Promise<ExpanseOnInvoice> {
-    try {
-      const verifyInvoiceExists = await this.invoiceService.invoices({creditCardId, AND: {
-        closed: false
-      }});
-
-      if (verifyInvoiceExists.length === 0) {
-        throw new HttpException(
-          'ERRO: fatura não encontrada',
-          HttpStatus.NOT_FOUND
-        );
-      }
-
-      return this.prisma.expanseOnInvoice.create({data: {
-        ...data,
-        invoiceId: verifyInvoiceExists[0].id
-      }});
-    } catch (error) {
-      Logger.log('erro ao vincular despesa na fatura: ', error);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  async deleteExpanseOnInvoice(where: Prisma.ExpanseOnInvoiceWhereUniqueInput): Promise<ExpanseOnInvoice> {
-    try {
-      const verifyExpanseExists = await this.expansesOnInvoice(where);
-
-      if (verifyExpanseExists.length === 0) {
-        throw new HttpException(
-          'ERRO: despesa na fatura não encontrada',
-          HttpStatus.NOT_FOUND
-        );
-      }
-
-      const response = await this.prisma.$transaction(async() => {
-        const invoice = await this.invoiceService.invoice({id: verifyExpanseExists[0].invoiceId});
-
-        await this.invoiceService.updateInvoice({where: {
-          id: invoice.id,
-        }, data: {
-          value: invoice.value - verifyExpanseExists[0].value
-        }});
-
-        return await this.prisma.expanseOnInvoice.delete({
-          where,
-        });
-      })
-
-      return response;
-    } catch (error) {
-      Logger.log('erro ao deletar despesa na fatura: ', error);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
 }

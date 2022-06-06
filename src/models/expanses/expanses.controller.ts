@@ -1,10 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { Expanse, ExpanseOnAccount, ExpanseOnInvoice } from '@prisma/client';
+import { Expanse } from '@prisma/client';
 import { ExpansesService } from './expanses.service';
-import {  ExpanseOnAccountCreateDto } from './dtos/expanse-on-account-create.dto';
 import {ExpanseCreateDto  } from './dtos/expanse-create.dto';
 import {ExpanseUpdateDto  } from './dtos/expanse-update.dto';
-import { ExpanseOnInvoiceCreateDto } from './dtos/expanse-on-invoice-create.dto';
 
 
 @Controller('expanses')
@@ -52,55 +50,4 @@ async deleteExpanse(
     id
   },userId)
 }
-
-
-@Get('onAccount/:userId')
-async getAllUserExpanseOnAccount(
-  @Param('userId') userId: string,
-): Promise<ExpanseOnAccount[]> {
-  return this.expansesService.expansesOnAccount({userId});
-}
-
-
-@Post('/onAccount')
-async createExpanseOnAccount(
-  @Body() data: ExpanseOnAccountCreateDto,
-): Promise<ExpanseOnAccount> {
-  return this.expansesService.createExpanseOnAccount(data);
-}
-
-@Delete('onAccount/:id/:userId')
-async deleteExpanseOnAccount(
-  @Param('id') id: string,
-  @Param('userId') userId: string,
-): Promise<boolean> {
-  return this.expansesService.deleteExpanseOnAccount({
-    id
-  },userId)
-}
-
-@Post('/onInvoice/:creditCardId')
-async createExpanseOnInvoice(
-  @Body() data: ExpanseOnInvoiceCreateDto,
-  @Param('creditCardId') creditCardId: string,
-): Promise<ExpanseOnInvoice> {
-  return this.expansesService.createExpanseOnInvoice(data, creditCardId);
-}
-
-@Get('onInvoice/:invoiceId')
-async getAllUserExpanseOnInvoice(
-  @Param('invoiceId') invoiceId: string,
-): Promise<ExpanseOnInvoice[]> {
-  return this.expansesService.expansesOnInvoice({invoiceId});
-}
-
-@Delete('/onInvoice/:id/onInvoice')
-async deleteExpanseOnInvoice(
-  @Param('id') id: string,
-): Promise<ExpanseOnInvoice> {
-  return this.expansesService.deleteExpanseOnInvoice({
-    id
-  })
-}
-
 }
