@@ -1,11 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { Income, IncomeOnAccount } from '@prisma/client';
-import { IncomeOnAccountCreateDto } from './dtos/income-on-account-create.dto';
+import { Income } from '@prisma/client';
 import { IncomesCreateDto } from './dtos/incomes-create.dto';
 import { IncomeUpdateDto } from './dtos/incomes-update.dto';
 import { IncomesService } from './incomes.service';
 import { lastDayOfMonth, startOfMonth } from 'date-fns';
-import { IncomeOnAccountUpdateDto } from './dtos/income-on-account-update.dto';
 
 
 @Controller('incomes')
@@ -59,25 +57,11 @@ export class IncomesController {
     });
   }
 
-  @Get('onAccount/:userId')
-  async getAllUserIncomesOnAccount(
-    @Param('userId') userId: string,
-  ): Promise<IncomeOnAccount[]> {
-    return this.incomesService.incomesOnAccount({userId});
-  }
-
   @Post()
   async createIncome(
     @Body() data: IncomesCreateDto,
   ): Promise<Income> {
     return this.incomesService.createIncomes(data);
-  }
-
-  @Post('/onAccount')
-  async createIncomeOnAccount(
-    @Body() data: IncomeOnAccountCreateDto,
-  ): Promise<IncomeOnAccount> {
-    return this.incomesService.createIncomeOnAccount(data);
   }
 
   @Put(':id')
@@ -102,29 +86,4 @@ export class IncomesController {
       id
     },userId)
   }
-
-  @Put(':id/onAccount')
-  async updateIncomeOnAccount(
-    @Body() data: IncomeOnAccountUpdateDto,
-    @Param('id') id: string
-  ): Promise<IncomeOnAccount> {
-    return this.incomesService.updateIncomeOnAccount({
-      data,
-      where: {
-        id
-      }
-    })
-  }
-
-
-  @Delete('onAccount/:id/:userId')
-  async deleteIncomeOnAccount(
-    @Param('id') id: string,
-    @Param('userId') userId: string,
-  ): Promise<boolean> {
-    return this.incomesService.deleteIncomeOnAccount({
-      id
-    },userId)
-  }
-  
 }
