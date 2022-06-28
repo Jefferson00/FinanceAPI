@@ -79,6 +79,7 @@ export class ExpansesOnInvoiceService {
 
       return response;
     } catch (error) {
+      console.log(error)
       Logger.log('erro ao deletar despesa na fatura: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

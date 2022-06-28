@@ -63,42 +63,20 @@ export class InvoiceService {
 
       if (data.paid !== undefined && data.paid !== verifyInvoiceExists.paid){
         const response = await this.prisma.$transaction(async () =>{
-          const currentAccountBalanceExists = await this.prisma.accountBalance.findFirst({where: {
-            accountId: verifyInvoiceExists.accountId,
-            month: {
-              lte: new Date(),
-            }
-          }});
-          
-          let currentAccountBalance;
-          if (currentAccountBalanceExists) {
-            currentAccountBalance = currentAccountBalanceExists;
-          } else {
-             //criar balanço caso não exista
-            const account = await this.prisma.account.findFirst({where:{
-              id: verifyInvoiceExists.accountId,
-            }});
-
-            const accountBalanceCreated = await this.prisma.accountBalance.create({data: {
-              month: new Date(),
-              value: account.initialValue,
-              accountId: account.id
-            }});
-            
-            currentAccountBalance = accountBalanceCreated;
-          }
-
+          const account = await this.prisma.account.findFirst({where: {
+            id: verifyInvoiceExists.accountId
+          }})
           if(data.paid){
-            await this.prisma.accountBalance.update({data:{
-              value: currentAccountBalance.value - verifyInvoiceExists.value
+            await this.prisma.account.update({data:{
+              balance: account.balance - verifyInvoiceExists.value
             }, where: {
-              id: currentAccountBalance.id
+              id: account.id
             }});
           } else {
-            await this.prisma.accountBalance.update({data:{
-              value: currentAccountBalance.value + verifyInvoiceExists.value
+            await this.prisma.account.update({data:{
+              balance: account.balance + verifyInvoiceExists.value
             }, where: {
-              id: currentAccountBalance.id
+              id: account.id
             }});
           }
 
@@ -140,7 +118,7 @@ export class InvoiceService {
     }
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_8PM)
   async verifyInvoice() : Promise<void> {
     try {
       await this.prisma.$transaction(async() => {
