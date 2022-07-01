@@ -137,31 +137,67 @@ export class ExpansesService {
         });
   
         const expansesOnInvoice = await this.expansesOnInvoiceService.expansesOnInvoice({
-          expanseId: verifyExpanseExists.id
+          expanseId: verifyExpanseExists.id,
         });
   
   
-        await Promise.all(expansesOnAccount.map(async expanseOnAccount => {
-          await this.prisma.expanseOnAccount.update({
-            data: {
-              name: data.name
-            },
-            where: {
-              id: expanseOnAccount.id
-            }
-          })
-        }));
+        if (expansesOnAccount.length > 0) {
+          await Promise.all(expansesOnAccount.map(async expanseOnAccount => {
+            await this.prisma.expanseOnAccount.update({
+              data: {
+                name: data.name
+              },
+              where: {
+                id: expanseOnAccount.id
+              }
+            })
+          }));
+        }
   
-        await Promise.all(expansesOnInvoice.map(async expanseOnInvoice => {
-          await this.prisma.expanseOnAccount.update({
-            data: {
-              name: data.name
-            },
-            where: {
-              id: expanseOnInvoice.id
+        if(expansesOnInvoice.length > 0){
+          await Promise.all(expansesOnInvoice.map(async expanseOnInvoice => {
+            await this.prisma.expanseOnInvoice.update({
+              data: {
+                name: data.name
+              },
+              where: {
+                id: expanseOnInvoice.id
+              }
+            });
+          }));  
+        }
+      }
+
+      if (data.value && data.value !== verifyExpanseExists.value){
+        const expansesOnInvoice = await this.prisma.expanseOnInvoice.findMany({
+          where: {
+            expanseId: verifyExpanseExists.id,
+          AND: {
+            invoice: {
+              closed: false,
+              paid: false,
             }
-          })
-        }));  
+          }
+          }, include: {
+            invoice: true
+          }
+        });
+
+        if(expansesOnInvoice.length > 0){
+          await Promise.all(expansesOnInvoice.map(async expanseOnInvoice => {
+            await this.prisma.expanseOnInvoice.update({
+              data: {
+                value: data.value
+              },
+              where: {
+                id: expanseOnInvoice.id
+              }
+            })
+            await this.invoiceService.updateInvoice({where: {id: expanseOnInvoice.invoiceId}, data: {
+              value: (expanseOnInvoice.invoice.value - verifyExpanseExists.value) + data.value
+            }})
+          }));  
+        }
       }
       return this.prisma.expanse.update({
         data,
@@ -206,7 +242,7 @@ export class ExpansesService {
 
       await Promise.all(expanses.map(async (exp) => {
         const findExpanse= await this.expanse({id: exp.expanseId});
-        Object.assign(exp, {category: findExpanse.category});
+         if (findExpanse) Object.assign(exp, {category: findExpanse.category});
         return exp;
       }));
 

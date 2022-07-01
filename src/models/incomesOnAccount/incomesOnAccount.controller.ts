@@ -42,7 +42,7 @@ export class IncomesOnAccountController {
   async deleteIncomeOnAccount(
     @Param('id') id: string,
     @Param('userId') userId: string,
-  ): Promise<boolean> {
+  ): Promise<IncomeOnAccount> {
     return this.incomesService.deleteIncomeOnAccount({
       id
     },userId)

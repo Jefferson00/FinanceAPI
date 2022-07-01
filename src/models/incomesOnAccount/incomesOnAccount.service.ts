@@ -62,9 +62,16 @@ export class IncomesOnAccountService {
           where: {
             id: accountFound.id,
           }
-        })
+        });
 
-        return this.prisma.incomeOnAccount.create({data});
+        const incomeOnAccountCreated = await this.prisma.incomeOnAccount.create({data});
+
+        const income = await this.prisma.income.findFirst({where: {
+          id: incomeOnAccountCreated.incomeId
+        }});
+        Object.assign(incomeOnAccountCreated, {income});
+
+        return incomeOnAccountCreated;
       })
       return response;
     } catch (error) {
@@ -107,7 +114,7 @@ export class IncomesOnAccountService {
     }
   }
 
-  async deleteIncomeOnAccount(where: Prisma.IncomeOnAccountWhereUniqueInput, userId: string): Promise<boolean> {
+  async deleteIncomeOnAccount(where: Prisma.IncomeOnAccountWhereUniqueInput, userId: string): Promise<IncomeOnAccount> {
     try {
       const verifyIncomeOnAccountExists = await this.prisma.incomeOnAccount.findUnique({
         where
@@ -145,7 +152,7 @@ export class IncomesOnAccountService {
         });
       });
 
-      return true;
+      return verifyIncomeOnAccountExists;
     } catch (error) {
       Logger.log('erro ao deletar entrada: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

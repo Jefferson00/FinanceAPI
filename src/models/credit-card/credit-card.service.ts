@@ -38,6 +38,7 @@ export class CreditCardService {
                 name: true,
                 value: true,
                 day: true,
+                recurrence: true,
               }
             }
           },

@@ -28,7 +28,7 @@ export class ExpansesOnAccountController {
   async deleteExpanseOnAccount(
     @Param('id') id: string,
     @Param('userId') userId: string,
-  ): Promise<boolean> {
+  ): Promise<ExpanseOnAccount> {
     return this.expansesOnAccountService.deleteExpanseOnAccount({
       id
     },userId)

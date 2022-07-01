@@ -37,7 +37,7 @@ export class IncomesService {
 
       await Promise.all(incomes.map(async (inc) => {
         const findIncome = await this.income({id: inc.incomeId});
-        Object.assign(inc, {category: findIncome.category});
+        if (findIncome) Object.assign(inc, {category: findIncome.category});
         return inc;
       }));
 

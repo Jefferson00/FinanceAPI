@@ -61,7 +61,14 @@ export class ExpansesOnAccountService {
         }
       })
 
-      return this.prisma.expanseOnAccount.create({data});
+      const expanseOnAccountCreated = await this.prisma.expanseOnAccount.create({data});
+
+      const expanse = await this.prisma.expanse.findFirst({where: {
+        id: expanseOnAccountCreated.expanseId
+      }});
+      Object.assign(expanseOnAccountCreated, {expanse});
+
+      return expanseOnAccountCreated;
     })
 
       return response;
@@ -71,7 +78,7 @@ export class ExpansesOnAccountService {
     }
   }
 
-  async deleteExpanseOnAccount(where: Prisma.ExpanseOnAccountWhereUniqueInput, userId: string): Promise<boolean> {
+  async deleteExpanseOnAccount(where: Prisma.ExpanseOnAccountWhereUniqueInput, userId: string): Promise<ExpanseOnAccount> {
     try {
       const verifyExpanseOnAccountExists = await this.prisma.expanseOnAccount.findUnique({
         where
@@ -109,7 +116,7 @@ export class ExpansesOnAccountService {
         });
       });
      
-      return true;
+      return verifyExpanseOnAccountExists;
     } catch (error) {
       Logger.log('erro ao deletar despesa vinculada a uma conta: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
