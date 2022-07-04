@@ -66,6 +66,25 @@ export class CreditCardService {
 
       const card = await this.prisma.creditCard.create({
         data,
+        include: {
+          Invoice: {
+            include: {
+              ExpanseOnInvoice: {
+                select:{
+                  id: true,
+                  expanseId: true,
+                  name: true,
+                  value: true,
+                  day: true,
+                  recurrence: true,
+                }
+              }
+            },
+            orderBy: {
+              month: 'asc',
+            }
+          }
+        }
       });
 
       if (isBefore(card.invoiceClosing, new Date())){
@@ -130,6 +149,25 @@ export class CreditCardService {
       return this.prisma.creditCard.update({
         data,
         where,
+        include: {
+          Invoice: {
+            include: {
+              ExpanseOnInvoice: {
+                select:{
+                  id: true,
+                  expanseId: true,
+                  name: true,
+                  value: true,
+                  day: true,
+                  recurrence: true,
+                }
+              }
+            },
+            orderBy: {
+              month: 'asc',
+            }
+          }
+        }
       });
     } catch (error) {
       Logger.log('erro ao atualizar cartão: ', error);
