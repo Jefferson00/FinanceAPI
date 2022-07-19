@@ -4,6 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { AccountsModule } from './../models/accounts/accounts.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UsersModule } from './../models/users/users.module';
@@ -17,10 +18,21 @@ import { InvoicesModule } from '../models/invoices/invoices.module';
 import { IncomesOnAccountModule } from '../models/incomesOnAccount/incomesOnAccount.module';
 import { ExpansesOnAccountModule } from '../models/expansesOnAccount/expansesOnAccount.module';
 import { ExpansesOnInvoiceModule } from 'src/models/expansesOnInvoice/expansesOnInvoice.module';
-
+import Redis from 'ioredis';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    BullModule.forRoot({
+      createClient: () => {
+        return new Redis({
+          host: process.env.REDIS_HOSTNAME,
+          port: Number(process.env.REDIS_PORT),
+          password: process.env.REDIS_PASSWORD,
+          enableReadyCheck: false,
+          maxRetriesPerRequest: null,
+        });
+      },
+    }),
     AccountsModule,
     UsersModule,
     IncomesModule,
