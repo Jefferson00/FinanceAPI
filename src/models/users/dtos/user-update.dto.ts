@@ -1,20 +1,23 @@
 /* eslint-disable prettier/prettier */
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsPhoneNumber, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UserUpdateDto {
   @IsOptional()
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
-  name: string;
+  @MinLength(2, { message: 'O campo nome deve ter no mínimo 2 caracteres.' })
+  @MaxLength(30, { message: 'O campo nome deve ter no máximo 30 caracteres.' })
+  name?: string;
 
   @IsOptional()
   @IsEmail({}, { message: 'E-mail inválido.' })
-  email: string;
+  email?: string;
 
   @IsOptional()
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
-  avatar: string;
+  avatar?: string;
 
   @IsOptional()
   @IsString({ message: 'O campo nome deve ser do tipo texto.' })
-  phone: string;
+  @IsPhoneNumber('BR', { message: 'Formato de telefone inválido'})
+  phone?: string;
 }

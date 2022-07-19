@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+  binaryTargets   = ["debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -8,11 +10,151 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  avatar    String?
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String             @id @default(uuid())
+  email            String?            @unique
+  name             String?
+  avatar           String?
+  phone            String?            @unique
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  Account          Account[]
+  Income           Income[]
+  IncomeOnAccount  IncomeOnAccount[]
+  Expanse          Expanse[]
+  ExpanseOnAccount ExpanseOnAccount[]
+  CreditCard       CreditCard[]
+}
+
+model Account {
+  id                String              @id @default(uuid())
+  name              String
+  type              String
+  initialValue      Int
+  status            String
+  userId            String
+  balance           Int
+  user              User                @relation(fields: [userId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  IncomesOnAccounts IncomesOnAccounts[]
+  Invoice           Invoice[]
+}
+
+model Income {
+  id                String              @id @default(uuid())
+  name              String
+  description       String?
+  value             Int
+  category          String
+  receiptDate       DateTime
+  iteration         String
+  receiptDefault    String?
+  startDate         DateTime
+  endDate           DateTime?
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  IncomesOnAccounts IncomesOnAccounts[]
+}
+
+model IncomesOnAccounts {
+  account     Account  @relation(fields: [accountId], references: [id])
+  accountId   String
+  income      Income   @relation(fields: [incomeId], references: [id])
+  incomeId    String
+  assignedAt  DateTime @default(now())
+  assignedBy  String
+  value       Int
+  receiptDate DateTime
+  paymentDate DateTime
+  recurrence  String?
+
+  @@id([accountId, incomeId])
+}
+
+model IncomeOnAccount {
+  id          String   @id @default(uuid())
+  paymentDate DateTime @unique @default(now())
+  month       DateTime
+  recurrence  String?
+  incomeId    String
+  accountId   String
+  value       Int
+  name        String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Expanse {
+  id             String    @id @default(uuid())
+  name           String
+  description    String?
+  value          Int
+  category       String
+  receiptDate    DateTime
+  iteration      String
+  receiptDefault String
+  startDate      DateTime
+  endDate        DateTime?
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ExpanseOnAccount {
+  id          String   @id @default(uuid())
+  paymentDate DateTime @unique @default(now())
+  month       DateTime
+  recurrence  String?
+  expanseId   String
+  accountId   String
+  value       Int
+  name        String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model CreditCard {
+  id             String    @id @default(uuid())
+  name           String
+  limit          Int
+  paymentDate    DateTime
+  invoiceClosing DateTime
+  color          String
+  receiptDefault String
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  Invoice        Invoice[]
+}
+
+model Invoice {
+  id               String             @id @default(uuid())
+  month            DateTime
+  closingDate      DateTime
+  paymentDate      DateTime
+  paid             Boolean
+  closed           Boolean
+  value            Int
+  creditCardId     String
+  creditCard       CreditCard         @relation(fields: [creditCardId], references: [id])
+  account          Account            @relation(fields: [accountId], references: [id])
+  accountId        String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  ExpanseOnInvoice ExpanseOnInvoice[]
+}
+
+model ExpanseOnInvoice {
+  id         String  @id @default(uuid())
+  recurrence String?
+  expanseId  String
+  value      Int
+  name       String
+  day        Int
+  invoiceId  String
+  invoice    Invoice @relation(fields: [invoiceId], references: [id])
 }
