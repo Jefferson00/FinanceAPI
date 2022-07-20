@@ -16,7 +16,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
 
 const firebase_params = {
   projectId: serviceAccount?.project_id || process.env.FIREBASE_PROJECT_ID, 
-  privateKey: serviceAccount.private_key || process.env.FIREBASE_PRIVATE_KEY,
+  privateKey: serviceAccount.private_key || process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
   clientEmail: serviceAccount.client_email || process.env.FIREBASE_CLIENT_EMAIL,
 }
 
