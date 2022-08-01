@@ -31,7 +31,17 @@ export class UsersService {
 
   async users(): Promise<User[]> {
     try {
-      return await this.prisma.user.findMany();
+      const users = await this.prisma.user.findMany();
+
+      users.map(user => {
+        if (user.avatar && !user.avatar.startsWith('http')) {
+          Object.assign(user, {
+            avatarUrl: `${process.env.API_URL}static/${user.avatar}`,
+          });
+        }
+      })
+      
+      return users;
     } catch (error) {
       Logger.log('erro ao listar usuários: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
