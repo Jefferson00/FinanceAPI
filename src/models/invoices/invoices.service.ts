@@ -119,12 +119,12 @@ export class InvoiceService {
     }
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   handleCron() {
-    Logger.log('Called every 30 seconds');
+    Logger.log('Called every 5 minutes');
   }
 
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_DAY_AT_10PM)
   async verifyInvoice() : Promise<void> {
     try {
       await this.prisma.$transaction(async() => {
