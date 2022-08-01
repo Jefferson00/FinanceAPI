@@ -35,7 +35,7 @@ export class AuthMiddleware implements NestMiddleware {
   // eslint-disable-next-line @typescript-eslint/ban-types
   use(req: Request, res: Response, next: Function) {
     const token = req.headers.authorization;
-    if (req.url === '/invoices/verify') return next();
+    if (req.url === '/invoices/verify' || req.url.startsWith('/static/')) return next();
     if (token === undefined) return this.accessDenied(req.url, res);
     if(token !== null && token !== '' && token !== undefined){
       this.defaultApp.auth().verifyIdToken(token.replace('Bearer ', ''))
