@@ -20,9 +20,16 @@ export class UsersService {
     userWhereUniqueInput: Prisma.UserWhereUniqueInput,
   ): Promise<User | null> {
     try {
-      return await this.prisma.user.findUnique({
+      const user = await this.prisma.user.findUnique({
         where: userWhereUniqueInput,
       });
+      if (user.avatar && !user.avatar.startsWith('http')) {
+        Object.assign(user, {
+          avatarUrl: `${process.env.API_URL}static/${user.avatar}`,
+        });
+      }
+  
+      return user;
     } catch (error) {
       Logger.log('erro ao buscar usuário: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -31,7 +38,17 @@ export class UsersService {
 
   async users(): Promise<User[]> {
     try {
-      return await this.prisma.user.findMany();
+      const users = await this.prisma.user.findMany();
+
+      users.map(user => {
+        if (user.avatar && !user.avatar.startsWith('http')) {
+          Object.assign(user, {
+            avatarUrl: `${process.env.API_URL}static/${user.avatar}`,
+          });
+        }
+      })
+      
+      return users;
     } catch (error) {
       Logger.log('erro ao listar usuários: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

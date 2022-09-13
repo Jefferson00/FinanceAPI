@@ -18,7 +18,6 @@ export class InvoiceProcessor {
   @Process('verifyInvoicesJob')
   async verifyInvoices(job: Job<{currentInvoices: Invoice[]}>) {
     const invoices = job.data;
-    console.log(invoices)
     Logger.log('fila verificação iniciada');
     try {
       await this.prisma.$transaction(async() => {

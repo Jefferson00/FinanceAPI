@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ExpanseOnInvoice, Prisma } from '@prisma/client';
-import { PrismaService } from 'src/providers/database/prisma/prisma.service';
+import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { ExpanseOnInvoiceCreateDto } from './dtos/expanse-on-invoice-create.dto';
 import { InvoiceService } from '../invoices/invoices.service';
 
@@ -79,7 +79,6 @@ export class ExpansesOnInvoiceService {
 
       return response;
     } catch (error) {
-      console.log(error)
       Logger.log('erro ao deletar despesa na fatura: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

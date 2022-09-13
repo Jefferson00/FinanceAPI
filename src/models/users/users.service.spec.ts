@@ -10,6 +10,9 @@ import fs = require('fs');
 import { IncomesService } from '../incomes/incomes.service';
 import { ExpansesService } from '../expanses/expanses.service';
 import { Transaction } from './interfaces/Transaction';
+import { InvoiceService } from '../invoices/invoices.service';
+import { ExpansesOnInvoiceService } from '../expansesOnInvoice/expansesOnInvoice.service';
+import { BullModule, getQueueToken } from '@nestjs/bull';
 
 const userWhereUniqueInput: Prisma.UserWhereUniqueInput = {
   email: 'any@email.com',
@@ -18,6 +21,8 @@ const userWhereUniqueInput: Prisma.UserWhereUniqueInput = {
 const where: Prisma.UserWhereUniqueInput = {
   id: 'any_id',
 };
+
+const exampleQueueMock = { add: jest.fn() };
 
 const createUserDTO: UserCreateDto = {
   email: 'anyemail@email.com',
@@ -36,7 +41,7 @@ const file: IFile = {
 
 const user: User = {
   id: 'any_id',
-  avatar: null,
+  avatar: 'any_image',
   name: 'any_name',
   email: 'any@email.com',
   phone: '61 9 0000 9999',
@@ -83,8 +88,23 @@ describe('UsersService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, PrismaService, IncomesService, ExpansesService],
-    }).compile();
+      imports: [
+        BullModule.registerQueue({
+          name: 'verify-invoices',
+        }),
+      ],
+      providers: [
+        UsersService,
+        PrismaService, 
+        IncomesService, 
+        ExpansesService, 
+        InvoiceService, 
+        ExpansesOnInvoiceService
+      ],
+    })
+    .overrideProvider(getQueueToken('verify-invoices'))
+    .useValue(exampleQueueMock)
+    .compile();
 
     service = module.get<UsersService>(UsersService);
     prismaService = module.get<PrismaService>(PrismaService);
@@ -127,6 +147,10 @@ describe('UsersService', () => {
   describe('Find User Last Transactions', () => {
     it('should be able to find user last transactions', async () => {
       const response = await service.getUserLastTransactions('any_id');
+     /*  allTransactions.sort = jest.fn().mockImplementationOnce(() => lastTransactions); */
+    /*   jest.mock(allTransactions, () => ({
+        sort: jest.fn(() => lastTransactions),
+      })) */
 
       expect(response).toEqual(lastTransactions);
     });
