@@ -37,9 +37,10 @@ export class InvoiceService {
 
   async createInvoice(data: InvoiceCreateDto): Promise<Invoice> {
     try {
-      return this.prisma.invoice.create({
+      const invoiceCreated = await this.prisma.invoice.create({
         data,
-      });
+      })
+      return invoiceCreated;
     } catch (error) {
       Logger.log('erro ao criar fatura: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

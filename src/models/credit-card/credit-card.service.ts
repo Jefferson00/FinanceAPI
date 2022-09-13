@@ -48,6 +48,7 @@ export class CreditCardService {
         }
       }});
     } catch (error) {
+     
       Logger.log('erro ao listar cartões: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
@@ -88,6 +89,7 @@ export class CreditCardService {
       });
 
       if (isBefore(card.invoiceClosing, new Date())){
+    
         const firstInvoice : InvoiceCreateDto = {
           accountId: card.receiptDefault,
           closingDate: addMonths(card.invoiceClosing, 1).toISOString(),
