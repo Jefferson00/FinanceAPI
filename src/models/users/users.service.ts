@@ -23,7 +23,7 @@ export class UsersService {
       const user = await this.prisma.user.findUnique({
         where: userWhereUniqueInput,
       });
-      if (user.avatar && !user.avatar.startsWith('http')) {
+      if (user?.avatar && !user?.avatar.startsWith('http')) {
         Object.assign(user, {
           avatarUrl: `${process.env.API_URL}static/${user.avatar}`,
         });
