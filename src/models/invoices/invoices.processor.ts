@@ -32,22 +32,26 @@ export class InvoiceProcessor {
             },
           });
 
+          const month = addMonths(new Date(invoice.month), 1);
+          const closingDate = addMonths(new Date(invoice.closingDate), 1);
+          const paymentDate =  addMonths(new Date(invoice.paymentDate), 1);
+
           const invoiceCreated = await this.prisma.invoice.create({
             data: {
               closed: false,
               paid: false,
               value: 0,
-              closingDate: addMonths(new Date(invoice.closingDate), 1),
-              month: addMonths(new Date(invoice.month), 1),
-              paymentDate: addMonths(new Date(invoice.paymentDate), 1),
+              closingDate,
+              month,
+              paymentDate,
               accountId: invoice.accountId,
               creditCardId: invoice.creditCardId,
             }
           });
 
-          const lastDay = lastDayOfMonth(new Date())
+          const lastDay = lastDayOfMonth(month)
           lastDay.setUTCHours(23,59,59,999);
-          const firstDay = startOfMonth(new Date());
+          const firstDay = new Date(closingDate);
           firstDay.setUTCHours(0,0,0,0);
 
           const expansesOnCreditCard = await this.prisma.expanse.findMany({where: {
