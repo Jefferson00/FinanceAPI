@@ -33,7 +33,13 @@ export class IncomesService {
 
   async lastIncomesOnAccount(where?: Prisma.IncomeOnAccountWhereInput): Promise<IncomeOnAccount[]> {
     try {
-      const incomes = await this.prisma.incomeOnAccount.findMany({where, take: 3 });
+      const incomes = await this.prisma.incomeOnAccount.findMany({
+        where, 
+        orderBy: {
+          month: 'desc',
+        }, 
+        take: 3 
+      });
 
       await Promise.all(incomes.map(async (inc) => {
         const findIncome = await this.income({id: inc.incomeId});

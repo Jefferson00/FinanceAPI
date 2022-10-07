@@ -238,7 +238,13 @@ export class ExpansesService {
 
   async lastExpansesOnAccount(where?: Prisma.ExpanseOnAccountWhereInput): Promise<ExpanseOnAccount[]> {
     try {
-      const expanses = await this.prisma.expanseOnAccount.findMany({where, take: 3 });
+      const expanses = await this.prisma.expanseOnAccount.findMany({
+        where, 
+        orderBy: {
+          month: 'desc',
+        },
+        take: 3 
+      });
 
       await Promise.all(expanses.map(async (exp) => {
         const findExpanse= await this.expanse({id: exp.expanseId});
