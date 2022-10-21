@@ -227,9 +227,45 @@ export class ExpansesService {
         );
       }
 
-      return await this.prisma.expanse.delete({
-        where,
-      });
+      const response = await this.prisma.$transaction(async() => {
+        const expansesOnInvoice = await this.prisma.expanseOnInvoice.findMany({
+          where: {
+            expanseId: verifyExpanseExists.id,
+          AND: {
+            invoice: {
+              paid: false,
+            }
+          }
+          }, include: {
+            invoice: true
+          }
+        });
+
+        if(expansesOnInvoice.length > 0){
+          await this.prisma.expanseOnInvoice.deleteMany({
+            where: {
+              expanseId: verifyExpanseExists.id,
+              AND: {
+                invoice: {
+                  paid: false,
+                }
+              }
+            }
+          });
+
+          await Promise.all(expansesOnInvoice.map(async expanseOnInvoice => {
+            await this.invoiceService.updateInvoice({where: {id: expanseOnInvoice.invoiceId}, data: {
+              value: (expanseOnInvoice.invoice.value - verifyExpanseExists.value) 
+            }})
+          }));  
+        }
+
+        return await this.prisma.expanse.delete({
+          where,
+        })
+      })
+
+      return response
     } catch (error) {
       Logger.log('erro ao deletar despesa: ', error);
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
