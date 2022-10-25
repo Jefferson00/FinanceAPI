@@ -21,7 +21,9 @@ export class InvoiceProcessor {
     Logger.log('fila verificação iniciada');
     try {
       await this.prisma.$transaction(async() => {
+        
         await Promise.all(invoices.map(async(invoice) => {
+          Logger.log('invoice id', invoice.id)
           await this.prisma.invoice.update({
             data: {
               ...invoice,
@@ -49,10 +51,15 @@ export class InvoiceProcessor {
             }
           });
 
+          Logger.log('invoiceCreated', invoiceCreated)
+
           const lastDay = lastDayOfMonth(month)
           lastDay.setUTCHours(23,59,59,999);
           const firstDay = new Date(closingDate);
           firstDay.setUTCHours(0,0,0,0);
+
+          Logger.log('lastDay', lastDay)
+          Logger.log('firstDay', firstDay)
 
           const expansesOnCreditCard = await this.prisma.expanse.findMany({where: {
             OR: [{
@@ -71,6 +78,8 @@ export class InvoiceProcessor {
               endDate:null
             }]
           }});
+
+          Logger.log('expansesOnCreditCard', expansesOnCreditCard)
 
           let sumValue = 0;
 
