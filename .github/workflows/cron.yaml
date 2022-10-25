@@ -1,7 +1,10 @@
 name: daily-cron
+
 on:
   schedule:
     - cron: '20 * * * *'
+  workflow_dispatch:
+
 jobs:
   cron:
     runs-on: ubuntu-latest
