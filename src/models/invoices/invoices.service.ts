@@ -128,7 +128,8 @@ export class InvoiceService {
   @Cron(CronExpression.EVERY_DAY_AT_10PM)
   async verifyInvoice() : Promise<void> {
     try {
-      /* await this.prisma.$transaction(async() => {
+     /*  await this.prisma.$transaction(async() => {
+        
         
       }); */
       const currentInvoices = await this.invoices({
@@ -140,7 +141,9 @@ export class InvoiceService {
         }
       });
 
+      
       if(currentInvoices.length > 0) {
+        console.log(currentInvoices)
         this.verifyInvoicesQueue.add('verifyInvoicesJob', currentInvoices);
       }
       Logger.log('faturas verificadas');

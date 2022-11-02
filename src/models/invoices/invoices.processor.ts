@@ -6,7 +6,7 @@ import {
 } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Invoice } from '@prisma/client';
-import { addMonths, lastDayOfMonth, startOfMonth } from 'date-fns';
+import { addMonths, differenceInMonths, lastDayOfMonth, startOfMonth } from 'date-fns';
 import { PrismaService } from '../../providers/database/prisma/prisma.service';
 import { Job } from 'bull';
 
@@ -38,6 +38,26 @@ export class InvoiceProcessor {
           const closingDate = addMonths(new Date(invoice.closingDate), 1);
           const paymentDate =  addMonths(new Date(invoice.paymentDate), 1);
 
+          const nextMonthLastDay = lastDayOfMonth(month)
+          nextMonthLastDay.setUTCHours(23,59,59,999);
+          const nextMonthFirstDay = startOfMonth(month);
+          nextMonthFirstDay.setUTCHours(0,0,0,0);
+
+          const invoiceFound =  await this.prisma.invoice.findFirst({
+            where: {
+              creditCardId: invoice.creditCardId,
+              month: {
+                lte: nextMonthLastDay,
+                gte: nextMonthFirstDay,
+              }
+            }
+          });
+
+          if (invoiceFound) {
+            Logger.log('invoice já existe nesse mês');
+            return;
+          }
+
           const invoiceCreated = await this.prisma.invoice.create({
             data: {
               closed: false,
@@ -53,9 +73,9 @@ export class InvoiceProcessor {
 
           Logger.log('invoiceCreated', invoiceCreated)
 
-          const lastDay = lastDayOfMonth(month)
+          const lastDay = new Date(closingDate)
           lastDay.setUTCHours(23,59,59,999);
-          const firstDay = new Date(closingDate);
+          const firstDay = new Date(invoice.closingDate);
           firstDay.setUTCHours(0,0,0,0);
 
           Logger.log('lastDay', lastDay)
@@ -84,12 +104,18 @@ export class InvoiceProcessor {
           let sumValue = 0;
 
           await Promise.all(expansesOnCreditCard.map(async(exp) => {
+            let recurrence = null;
+            if (exp.endDate){
+              const differenceInMonth = differenceInMonths(month, exp.startDate);
+              recurrence = `${differenceInMonth + 1}/${exp.iteration}`
+            }
             await this.prisma.expanseOnInvoice.create({
               data: {
                 day: exp.startDate.getUTCDate(),
                 expanseId: exp.id,
                 name: exp.name,
                 value: exp.value,
+                recurrence,
                 invoiceId: invoiceCreated.id,
               }
             });
