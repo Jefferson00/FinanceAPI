@@ -78,11 +78,17 @@ export class ExpansesService {
             },
           });
 
+          let recurrence = null;
+            if (expanse.endDate){
+              recurrence = `1/${expanse.iteration}`
+            }
+
           await this.expansesOnInvoiceService.createExpanseOnInvoice({
             expanseId: expanse.id,
             name: expanse.name,
             value: expanse.value,
             day: expanse.startDate.getUTCDate(),
+            recurrence,
           }, expanse.receiptDefault)
 
           await this.invoiceService.updateInvoice({where: {id: verifyInvoiceExists[0].id}, data: {
